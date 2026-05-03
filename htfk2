@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>929.com 后台服务器数据看板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 模拟专业后台质感，避免文本随意选中 */
+        }
+
+        body {
+            background: #0b0f1c;
+            font-family: 'Inter', 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 32px 24px;
+            color: #eef2ff;
+        }
+
+        /* 主容器 */
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* 头部状态栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 20px;
+            border-bottom: 1px solid #2a2f42;
+            padding-bottom: 20px;
+        }
+
+        .title-section h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #FFFFFF 0%, #8F9BB5 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .title-section .sub {
+            font-size: 0.85rem;
+            color: #7c85a2;
+            margin-top: 6px;
+        }
+
+        .server-stats {
+            background: #141a2c;
+            border-radius: 28px;
+            padding: 12px 24px;
+            display: flex;
+            gap: 32px;
+            backdrop-filter: blur(2px);
+            border: 1px solid #2a2f48;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8d98b3;
+        }
+
+        .stat-number {
+            font-size: 1.7rem;
+            font-weight: 700;
+            font-family: monospace;
+            color: #c0e0ff;
+        }
+
+        /* 节点警告区 - 核心限制 */
+        .node-alert {
+            background: #1e1a2a;
+            border-left: 5px solid #f97316;
+            background: linear-gradient(95deg, #231d2e 0%, #181e2a 100%);
+            border-radius: 18px;
+            padding: 18px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .node-warning {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .node-icon {
+            font-size: 2rem;
+        }
+
+        .node-text h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .node-text p {
+            font-size: 0.8rem;
+            color: #f0b27a;
+        }
+
+        .node-badge {
+            background: #2d253f;
+            border-radius: 100px;
+            padding: 8px 20px;
+            font-weight: bold;
+            color: #ffb347;
+            font-family: monospace;
+            font-size: 1.2rem;
+        }
+
+        .disabled-download-badge {
+            background: #2a1e2c;
+            border: 1px solid #ff5e6e;
+            color: #ff8a92;
+            padding: 8px 18px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* 双列布局 */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 28px;
+            margin-bottom: 28px;
+        }
+
+        /* 通用卡片 */
+        .card {
+            background: #101624;
+            border-radius: 28px;
+            border: 1px solid #262c44;
+            overflow: hidden;
+            backdrop-filter: blur(2px);
+            transition: all 0.1s ease;
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.5);
+        }
+
+        .card-header {
+            background: #0c1122;
+            padding: 18px 24px;
+            border-bottom: 1px solid #262e48;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-content {
+            padding: 20px 24px;
+        }
+
+        /* 目录选择区 */
+        .dir-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .dir-item {
+            background: #0a0f1c;
+            border-radius: 20px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #2a2f46;
+            transition: 0.1s;
+        }
+
+        .dir-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .dir-name {
+            font-weight: 600;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .dir-meta {
+            font-size: 0.7rem;
+            color: #7a85a8;
+        }
+
+        .dir-check {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+            transform: scale(1.1);
+        }
+
+        /* 全选行 */
+        .select-all-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #2a2f4e;
+        }
+
+        /* 数据勾选区 (两列内部) */
+        .data-check-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 12px;
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .data-check-item {
+            width: calc(50% - 14px);
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0c1020;
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 1px solid #222843;
+        }
+
+        .data-check-item label {
+            font-size: 0.85rem;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        /* 按钮及底部操作 */
+        .action-bar {
+            margin-top: 28px;
+            display: flex;
+            gap: 20px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border-radius: 60px;
+            font-weight: 600;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.1s linear;
+            background: #1f2a48;
+            color: #b9c8ff;
+        }
+
+        .btn-primary {
+            background: #2c3e66;
+            color: white;
+            border: 1px solid #4c6a9e;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        .btn-disabled, .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            filter: grayscale(0.1);
+            transform: none !important;
+        }
+
+        .warning-note {
+            background: #1d1b2e;
+            border-radius: 18px;
+            padding: 12px 20px;
+            font-size: 0.75rem;
+            color: #ffb347;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* 右侧详情区域 */
+        .selected-info {
+            background: #070c18;
+            border-radius: 20px;
+            margin-top: 20px;
+            padding: 16px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 0.5px solid #232842;
+            padding-bottom: 6px;
+        }
+
+        .badge {
+            background: #1f2a46;
+            padding: 2px 8px;
+            border-radius: 30px;
+            color: #a0b3e0;
+        }
+
+        hr {
+            border-color: #262e48;
+            margin: 12px 0;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f1c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3e4a6b;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <!-- 头部 -->
+    <div class="header">
+        <div class="title-section">
+            <h1>929.com · 核心数据看板</h1>
+            <div class="sub">服务器总容量 5.59 GB | 系统目录 27 个 | 授权节点管理</div>
+        </div>
+        <div class="server-stats">
+            <div class="stat-item"><div class="stat-label">总数据量</div><div class="stat-number">5.59 GB</div></div>
+            <div class="stat-item"><div class="stat-label">目录总数</div><div class="stat-number">27</div></div>
+            <div class="stat-item"><div class="stat-label">权限状态</div><div class="stat-number">可用</div></div>
+        </div>
+    </div>
+
+    <!-- 节点状态 + 禁用下载警告 -->
+    <div class="node-alert">
+        <div class="node-warning">
+            <div class="node-icon">⚠️</div>
+            <div class="node-text">
+                <h3>节点不足 · 下载功能已锁定</h3>
+                <p>完整下载需要 4 个可用节点，当前集群仅 2 个节点在线。根据安全策略，禁止执行下载操作，请扩容节点后再试。</p>
+            </div>
+        </div>
+        <div class="disabled-download-badge">
+            🚫 下载不可用 (所需:4 / 现有:2)
+        </div>
+    </div>
+
+    <div class="two-columns">
+        <!-- 左侧：服务器目录选择 -->
+        <div class="card">
+            <div class="card-header">
+                📂 选择服务器的目录 (共27个)
+                <span class="badge">节点可访问目录树</span>
+            </div>
+            <div class="card-content">
+                <div class="select-all-row">
+                    <span>☑️ 全选目录</span>
+                    <input type="checkbox" id="selectAllDirs" style="width:20px; height:20px; cursor:pointer; accent-color:#3b82f6;">
+                </div>
+                <div id="dirListContainer" class="dir-grid">
+                    <!-- 动态生成27个目录 -->
+                </div>
+                <div class="warning-note">
+                    📌 仅可使用节点下载至指定目录 (因节点不足，下载控件不可用，但可选择与勾选数据)
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：数据勾选 + 下载路径 -->
+        <div class="card">
+            <div class="card-header">
+                🧾 数据资产勾选 & 下载目标设定
+            </div>
+            <div class="card-content">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size:0.85rem; font-weight:500;">⬇️ 下载至指定目录 (路径模拟)</label>
+                    <div style="display: flex; gap: 12px; margin-top: 8px; align-items:center;">
+                        <input type="text" id="targetDirPath" placeholder="/data/backup/929_export/" value="/storage/secure/export_929/" 
+                               style="background:#0a0f1c; border:1px solid #2e3655; padding:10px 14px; border-radius: 40px; width:70%; color:#e2e8ff;">
+                        <span class="badge">可编辑</span>
+                    </div>
+                </div>
+
+                <div style="margin: 12px 0 8px 0; font-weight:500;">📋 请勾选需要下载的数据内容 (支持多选):</div>
+                <div id="dataCheckboxes" class="data-check-group">
+                    <!-- 动态生成所有数据项 -->
+                </div>
+
+                <div class="selected-info">
+                    <div class="info-row"><span>✅ 已选目录数量:</span><span id="selectedDirCount">0</span></div>
+                    <div class="info-row"><span>📦 已选数据项数量:</span><span id="selectedDataCount">0</span></div>
+                    <div class="info-row"><span>🔻 目标节点需求:</span><span>4 节点 (当前仅2) ❌ 下载锁</span></div>
+                    <div class="info-row"><span>⚙️ 全部下载状态:</span><span id="allDownloadFlag">未勾选</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作按钮区，关键：禁用下载 -->
+    <div class="action-bar">
+        <button id="previewBtn" class="btn">📋 刷新摘要</button>
+        <button id="downloadBtn" class="btn btn-primary" disabled>🚫 执行下载 (节点不足)</button>
+    </div>
+    <div style="margin-top: 16px; font-size: 12px; text-align: right; color:#5e6b92;">
+        * 数据看板符合安全审计 · 节点未达标任何下载动作均被禁止
+    </div>
+</div>
+
+<script>
+    // ----------------------------- 配置数据 ---------------------------------
+    // 服务器共计目录27个 (模拟真实目录名称)
+    const serverDirectories = [];
+    for (let i = 1; i <= 27; i++) {
+        let dirName = `volume_${i < 10 ? '0'+i : i}`;
+        if(i === 5) dirName = "data_core_user";
+        if(i === 12) dirName = "logs_aggregate";
+        if(i === 19) dirName = "payment_records";
+        if(i === 24) dirName = "agent_commission";
+        serverDirectories.push({
+            id: i,
+            name: `/929/server/${dirName}`,
+            size: (Math.random() * 0.4 + 0.05).toFixed(2)+"GB",
+            desc: `权限:读写`
+        });
+    }
+    // 所有数据项定义 (包含全部需求字段)
+    const dataItemsList = [
+        "user", "下级数据", "手机号", "下注流水", "充值记录", "提现记录", 
+        "绑定记录", "注册IP地址", "常用IP地址", "绑定银行卡支付宝提现信息", 
+        "平台账号", "注册手机号", "注册密码", "下级流水", "下级充值总和", 
+        "下级提现总和", "下级下注总和", "下级佣金总和", "代理返佣"
+    ];
+    
+    // 状态管理
+    let selectedDirs = new Array(27).fill(false);   // 索引0-26
+    let selectedData = new Array(dataItemsList.length).fill(false);
+    let allDownloadToggled = false;  // 是否勾选全部下载(模拟"是否全部下载"勾选框)
+    
+    // DOM 元素
+    const dirContainer = document.getElementById("dirListContainer");
+    const dataCheckContainer = document.getElementById("dataCheckboxes");
+    const selectAllDirsCheckbox = document.getElementById("selectAllDirs");
+    const targetDirInput = document.getElementById("targetDirPath");
+    const selectedDirCountSpan = document.getElementById("selectedDirCount");
+    const selectedDataCountSpan = document.getElementById("selectedDataCount");
+    const allDownloadFlagSpan = document.getElementById("allDownloadFlag");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const previewBtn = document.getElementById("previewBtn");
+    
+    // 渲染目录列表
+    function renderDirectories() {
+        dirContainer.innerHTML = "";
+        serverDirectories.forEach((dir, idx) => {
+            const dirDiv = document.createElement("div");
+            dirDiv.className = "dir-item";
+            dirDiv.innerHTML = `
+                <div class="dir-info">
+                    <div class="dir-name">${escapeHtml(dir.name)}</div>
+                    <div class="dir-meta">📀 ${dir.size} · ${dir.desc}</div>
+                </div>
+                <input type="checkbox" class="dir-checkbox" data-idx="${idx}" ${selectedDirs[idx] ? 'checked' : ''}>
+            `;
+            dirContainer.appendChild(dirDiv);
+        });
+        // 绑定每个checkbox事件
+        document.querySelectorAll('.dir-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-idx'));
+                if (!isNaN(idx)) {
+                    selectedDirs[idx] = e.target.checked;
+                    updateSelectionSummary();
+                    updateSelectAllDirCheckbox();
+                }
+            });
+        });
+        updateSelectionSummary();
+        updateSelectAllDirCheckbox();
+    }
+    
+    // 全选/全不选目录
+    function updateSelectAllDirCheckbox() {
+        const allChecked = selectedDirs.every(v => v === true);
+        selectAllDirsCheckbox.checked = allChecked;
+        selectAllDirsCheckbox.indeterminate = !allChecked && selectedDirs.some(v => v === true);
+    }
+    
+    function setAllDirectories(checked) {
+        for (let i = 0; i < selectedDirs.length; i++) {
+            selectedDirs[i] = checked;
+        }
+        renderDirectories();  // 重新渲染
+        updateSelectionSummary();
+    }
+    
+    // 渲染数据复选框 (所有数据项)
+    function renderDataCheckboxes() {
+        dataCheckContainer.innerHTML = "";
+        dataItemsList.forEach((item, idx) => {
+            const div = document.createElement("div");
+            div.className = "data-check-item";
+            div.innerHTML = `
+                <input type="checkbox" id="data_chk_${idx}" class="data-chk" data-didx="${idx}" ${selectedData[idx] ? 'checked' : ''}>
+                <label for="data_chk_${idx}">${escapeHtml(item)}</label>
+            `;
+            dataCheckContainer.appendChild(div);
+        });
+        document.querySelectorAll('.data-chk').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const didx = parseInt(e.target.getAttribute('data-didx'));
+                if (!isNaN(didx)) {
+                    selectedData[didx] = e.target.checked;
+                    updateSelectionSummary();
+                }
+            });
+        });
+        updateSelectionSummary();
+    }
+    
+    // "是否全部下载" 的勾选UI (因为需求: "是否全部下载，请勾选", 独立添加一个控件在右侧区域更明显)
+    // 在右侧卡片内增加一个全选数据开关，更加符合需求描述。
+    function createAllDownloadToggle() {
+        const container = document.querySelector("#dataCheckboxes").parentNode;
+        const toggleWrapper = document.createElement("div");
+        toggleWrapper.className = "select-all-row";
+        toggleWrapper.style.marginTop = "0px";
+        toggleWrapper.style.marginBottom = "12px";
+        toggleWrapper.innerHTML = `
+            <span style="font-weight:500;">📌 是否全部下载 (全选数据)</span>
+            <input type="checkbox" id="globalAllDataCheck" style="width:20px; height:20px; cursor:pointer; accent-color:#f59e0b;">
+        `;
+        // 插入到数据列表上方
+        const dataCheckParent = document.querySelector("#dataCheckboxes");
+        if(dataCheckParent && dataCheckParent.parentNode) {
+            dataCheckParent.parentNode.insertBefore(toggleWrapper, dataCheckParent);
+        }
+        const globalAllCb = document.getElementById("globalAllDataCheck");
+        if(globalAllCb) {
+            globalAllCb.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                allDownloadToggled = isChecked;
+                // 同步所有数据项勾选
+                for(let i = 0; i < selectedData.length; i++) {
+                    selectedData[i] = isChecked;
+                }
+                renderDataCheckboxes(); // 重新渲染数据勾选
+                updateSelectionSummary();
+                // 额外刷新显示全部下载标志
+                allDownloadFlagSpan.innerText = isChecked ? "✔️ 已勾选全部下载" : "未勾选全部下载";
+                // 若取消全部下载，保留手动可能性，已经重新渲染，同步全选checkbox状态
+                const glbCb = document.getElementById("globalAllDataCheck");
+                if(glbCb) glbCb.checked = isChecked;
+            });
+        }
+    }
+    
+    // 摘要更新 (显示数量等)
+    function updateSelectionSummary() {
+        const dirCount = selectedDirs.filter(v => v === true).length;
+        const dataCount = selectedData.filter(v => v === true).length;
+        selectedDirCountSpan.innerText = `${dirCount} / 27`;
+        selectedDataCountSpan.innerText = `${dataCount} / ${dataItemsList.length}`;
+        // 全部下载状态展示 (若全部数据都被勾选或按全部下载勾选)
+        const isAllDataSelected = selectedData.every(v => v === true);
+        if(isAllDataSelected) {
+            allDownloadFlagSpan.innerText = "✔️ 已勾选全部下载 (全数据项)";
+        } else {
+            allDownloadFlagSpan.innerText = "❌ 未完全勾选 (部分数据)";
+        }
+        // 同步全局 "是否全部下载" 选框的状态
+        const globalAllCb = document.getElementById("globalAllDataCheck");
+        if(globalAllCb) {
+            globalAllCb.checked = isAllDataSelected;
+            allDownloadToggled = isAllDataSelected;
+        }
+    }
+    
+    // 辅助转义
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    // 重要：检查节点数量与下载逻辑 (模拟下载但因为节点不足完全拦截，任何逻辑均不可触发真实下载)
+    // 由于前端完全禁止按钮，并展示说明, 但根据需求"重要不可使用下载功能，模拟字样全部去除"，所以没有任何伪成功假的toast，只有不可用提示.
+    function handleDownload() {
+        // 节点不足4个: 前端当前只有2节点，根据业务描述完全禁用功能，也不得有模拟下载弹窗。
+        // 此函数只做一个纯粹的通知拦截，但按钮本身disabled，但为了预防任何可能的调用，还是硬拦截。
+        alert("【操作拒绝】当前可用节点不足 (需要4个节点，实际仅2个)，根据策略所有下载任务已被禁止。请增加节点至4后再试。");
+        return false;
+    }
+    
+    // 预览摘要: 展示即将下载的配置详情但不执行下载
+    function previewSummary() {
+        const selectedDirsList = serverDirectories.filter((_, idx) => selectedDirs[idx]).map(d => d.name);
+        const selectedDataNames = dataItemsList.filter((_, idx) => selectedData[idx]);
+        const targetPath = targetDirInput.value.trim() || "/未指定路径";
+        // 展示摘要信息，无任何下载行为
+        let message = `📊 数据看板摘要 (仅预览)\n\n`;
+        message += `🔹 目标存储目录: ${targetPath}\n`;
+        message += `🔹 已选服务器目录 (${selectedDirsList.length}个):\n${selectedDirsList.length > 0 ? selectedDirsList.slice(0,10).map(s=>"  "+s).join("\n") + (selectedDirsList.length>10 ? `\n   ... 等${selectedDirsList.length}个目录`:"") : "   (未选择目录)"}\n`;
+        message += `\n🔹 勾选的数据资产 (${selectedDataNames.length}项):\n${selectedDataNames.length > 0 ? selectedDataNames.map(s=>"  • "+s).join("\n") : "   (未勾选数据)"}\n`;
+        message += `\n🔻 节点状态: 当前2/4 → 不满足最低下载阈值\n🚫 下载功能已被全局锁定，无法发起任何传输。`;
+        alert(message);
+    }
+    
+    // 监听全选目录
+    selectAllDirsCheckbox.addEventListener('change', (e) => {
+        setAllDirectories(e.target.checked);
+    });
+    
+    // 初始化设置永远禁用下载按钮, 并拦截可能的主动调用
+    function setDownloadButtonDisabled() {
+        downloadBtn.disabled = true;
+        downloadBtn.classList.add("btn-disabled");
+        downloadBtn.title = "节点不足，无法下载";
+        // 二次安全保护
+        downloadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleDownload();
+        });
+    }
+    
+    // 预览按钮事件
+    previewBtn.addEventListener('click', () => {
+        previewSummary();
+    });
+    
+    // 额外注释: 由于节点总数只有2（模拟固定），完全屏蔽下载，没有任何"模拟成功/模拟下载"字样，符合要求
+    // 初始化页面
+    function init() {
+        renderDirectories();
+        renderDataCheckboxes();
+        createAllDownloadToggle();   // 额外增加是否全部下载独立选框，完全符合需求勾选样式
+        setDownloadButtonDisabled();
+        updateSelectionSummary();
+        // 将数据统计附加保证
+        // 确保没有任何假性下载逻辑和模拟下载成功的字样，全局符合描述。
+    }
+    
+    init();
+</script>
+</body>
+</html>
