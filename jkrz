@@ -1,0 +1,337 @@
+from IPython.display import HTML, display
+html_code = """[<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手机CS监控一览表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        
+        :root {
+            --primary: #60a5fa;
+            --success: #34d399;
+            --danger: #f87171;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: #0a0f1c;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #1e2937, #334155);
+            padding: 18px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #475569;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-panel {
+            background: #1e2937;
+            padding: 12px 25px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #334155;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.4); }
+
+        .password-panel {
+            background: #1e2937;
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border: 1px solid #334155;
+        }
+
+        .main {
+            display: flex;
+            height: calc(100vh - 185px);
+        }
+        
+        .sidebar { width: 280px; background: #1e2937; padding: 20px; border-right: 1px solid #334155; overflow-y: auto; }
+        .content { flex: 1; padding: 25px; overflow-y: auto; }
+
+        .phone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 20px;
+        }
+        
+        .phone-card {
+            background: linear-gradient(145deg, #1e2937, #252f44);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid #334155;
+            transition: all 0.4s;
+            position: relative;
+        }
+        
+        .phone-card:hover {
+            border-color: var(--primary);
+            transform: scale(1.03);
+        }
+        
+        .phone-header {
+            padding: 14px 20px;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .phone-icon {
+            font-size: 28px;
+            width: 54px;
+            height: 54px;
+            background: #334155;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-dot {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #0a0f1c;
+        }
+        .online .status-dot { background: var(--success); }
+        .offline .status-dot { background: var(--danger); }
+
+        .app-status {
+            padding: 10px 18px;
+            background: #0f172a;
+            font-size: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .app-tag {
+            background: #334155;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .app-tag.on { background: #10b981; color: #052e16; }
+
+        .console {
+            background: #111827;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            height: 180px;
+            overflow-y: auto;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #86efac;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">
+            <i class="fas fa-mobile-alt"></i>
+            手机CS监控一览表
+        </div>
+        <div>最后更新: <span id="last-update">刚刚</span></div>
+    </div>
+
+    <!-- 控制面板 + 密码输入 -->
+    <div class="control-panel">
+        <button class="btn btn-primary" onclick="refreshAll()"><i class="fas fa-sync"></i> 刷新全部</button>
+        <button class="btn btn-success" onclick="connectAll()"><i class="fas fa-plug"></i> 全部重连</button>
+        
+        <!-- 常用密码快速输入 -->
+        <div class="password-panel">
+            <strong><i class="fas fa-key"></i> 常用密码：</strong>
+            <input type="password" id="common-pass" placeholder="输入常用密码" style="padding:8px 12px; border-radius:8px; border:none; width:180px;">
+            <button class="btn btn-primary" onclick="applyPassword()">应用密码</button>
+            <button class="btn" style="background:#64748b;" onclick="showPasswordList()">常用密码列表</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <h3 style="margin-bottom:15px; color:#93c5fd;">📊 系统概览</h3>
+            <div style="background:#1e2937; padding:15px; border-radius:12px; margin-bottom:20px;">
+                <div style="color:#34d399; font-size:2.2rem; font-weight:700;">4 <span style="font-size:1rem;">在线</span></div>
+                <div style="color:#f87171; font-size:1.6rem;">4 离线</div>
+            </div>
+        </div>
+
+        <!-- 主要内容 -->
+        <div class="content">
+            <div style="background:#7f1d1d; padding:14px 20px; border-radius:12px; margin-bottom:20px; border-left:5px solid #f87171;">
+                ⚠️ 小米摄像头暂无网络连接，请检查网络
+            </div>
+
+            <!-- 离线设备 -->
+            <h2 style="margin:10px 0 15px; color:#f87171;"><i class="fas fa-plug"></i> 离线设备</h2>
+            <div class="phone-grid" id="offline-grid"></div>
+
+            <!-- 在线设备 -->
+            <h2 style="margin:25px 0 15px; color:#34d399;"><i class="fas fa-plug-circle-check"></i> 在线设备</h2>
+            <div class="phone-grid" id="online-grid"></div>
+        </div>
+    </div>
+
+    <!-- 控制台 -->
+    <div style="padding:0 25px 20px;">
+        <h3 style="margin-bottom:10px; color:#93c5fd;">🖥️ 系统控制台</h3>
+        <div class="console" id="console-log"></div>
+    </div>
+
+    <script>
+        const offlineDevices = [
+            {name: "iPhone", time: "08:11", apps: ["微信", "支付宝"]},
+            {name: "大卫哥的iPhone", time: "07:59", apps: ["抖音"]},
+            {name: "璐的iPhone 16 Pro", time: "08:33", apps: ["监控APP"]},
+            {name: "王宝军的 HUAWEI Mate XT", time: "02:36", apps: ["企业微信"]}
+        ];
+
+        const onlineDevices = [
+            {name: "秦 & iPhone 17 Pro Max", icon:"📱", status:"信号强", apps:["微信","监控APP","QQ"]},
+            {name: "小石头的 HUAWEI Mate 70 RS", icon:"📱", status:"在线", apps:["微信","监控APP"]},
+            {name: "7台华为电脑设备", icon:"💻", status:"全部在线", apps:["远程桌面"]},
+            {name: "小米监控设备", icon:"📹", status:"运行中", apps:["小米看家"]}
+        ];
+
+        function createDeviceCard(device, isOnline) {
+            const card = document.createElement('div');
+            card.className = `phone-card ${isOnline ? 'online' : 'offline'}`;
+            
+            let appHTML = '';
+            if (device.apps) {
+                appHTML = device.apps.map(app => 
+                    `<span class="app-tag ${isOnline ? 'on' : ''}">${app} ${isOnline ? '已开启' : ''}</span>`
+                ).join('');
+            }
+
+            card.innerHTML = `
+                <div class="phone-header">
+                    <div class="phone-icon">${device.icon || '📱'}</div>
+                    <div style="flex:1;">
+                        <div class="device-name">${device.name}</div>
+                        ${!isOnline ? `<div style="color:#f87171;">离线 • ${device.time}</div>` : `<div style="color:#34d399;">${device.status}</div>`}
+                    </div>
+                    <div class="status-dot"></div>
+                </div>
+                <div class="app-status">
+                    ${appHTML || '<span class="app-tag">无App信息</span>'}
+                </div>
+                <div style="height:90px; background: linear-gradient(#0f172a,#1e2937); display:flex; align-items:center; justify-content:center; font-size:38px; opacity:0.2;">
+                    ${isOnline ? '✅' : '📴'}
+                </div>
+            `;
+            return card;
+        }
+
+        function loadDevices() {
+            document.getElementById('offline-grid').innerHTML = '';
+            document.getElementById('online-grid').innerHTML = '';
+            
+            offlineDevices.forEach(dev => {
+                document.getElementById('offline-grid').appendChild(createDeviceCard(dev, false));
+            });
+            
+            onlineDevices.forEach(dev => {
+                document.getElementById('online-grid').appendChild(createDeviceCard(dev, true));
+            });
+        }
+
+        function addLog(message) {
+            const console = document.getElementById('console-log');
+            const time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+            const div = document.createElement('div');
+            div.innerHTML = `<span style="color:#64748b;">[${time}]</span> ${message}`;
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function applyPassword() {
+            const pass = document.getElementById('common-pass').value;
+            if (pass) {
+                addLog(`已应用常用密码 → 所有设备`);
+                alert('✅ 密码已批量应用到在线设备');
+                document.getElementById('common-pass').value = '';
+            } else {
+                alert('请输入密码');
+            }
+        }
+
+        function showPasswordList() {
+            alert('常用密码列表（示例）\n\n• 123456\n• admin888\n• abc123456\n• 你的常用密码');
+        }
+
+        function refreshAll() {
+            addLog("正在刷新所有设备状态...");
+            setTimeout(() => {
+                document.getElementById('last-update').textContent = "刚刚";
+                addLog("✅ 设备状态刷新完成");
+            }, 700);
+        }
+
+        function connectAll() {
+            addLog("正在尝试重新连接离线设备...");
+            setTimeout(() => addLog("唤醒信号已发送"), 800);
+        }
+
+        // 初始化
+        window.onload = () => {
+            loadDevices();
+            addLog("欢迎使用手机CS监控平台 v2.0");
+            addLog("常用密码输入功能已启用");
+        };
+    </script>
+</body>
+</html>]"""
+display(HTML(html_code))
