@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Google Cloud | 收款账户 & 上架管理中心</title>
+    <!-- Google Fonts & Material Icons 完整谷歌同款风格 -->
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 32px 24px;
+        }
+
+        /* 主卡片 - 纯粹 Google Material 风格 */
+        .gpc-container {
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .main-card {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* 头部 - Cloud 品牌 */
+        .header-brand {
+            padding: 28px 32px 20px 32px;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .cloud-icon-lg {
+            font-size: 34px;
+            color: #1a73e8;
+        }
+
+        .brand-text {
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: -0.3px;
+            color: #202124;
+        }
+
+        .brand-text span {
+            font-weight: 600;
+            color: #1a73e8;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 500;
+            color: #202124;
+            margin: 8px 0 4px;
+        }
+
+        .page-desc {
+            font-size: 14px;
+            color: #5f6368;
+        }
+
+        /* 中国地区限定条 */
+        .region-chip {
+            background: #fef7e0;
+            padding: 12px 32px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #fee8b0;
+            font-size: 13px;
+        }
+
+        .badge-warning {
+            background: #f9ab0020;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #b06500;
+            font-weight: 500;
+        }
+
+        /* 主要内容区 */
+        .content-pane {
+            padding: 28px 32px 24px 32px;
+        }
+
+        /* 谷歌输入框风格 */
+        .input-field {
+            margin-bottom: 28px;
+        }
+
+        .input-field label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            margin-bottom: 8px;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            border: 1px solid #dadce0;
+            border-radius: 12px;
+            padding: 0 14px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .input-container:hover {
+            border-color: #bdc1c6;
+        }
+
+        .input-container:focus-within {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+
+        .input-container .material-symbols-outlined {
+            font-size: 22px;
+            color: #5f6368;
+            margin-right: 10px;
+        }
+
+        .input-container input {
+            width: 100%;
+            padding: 14px 0;
+            font-size: 16px;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: 'Google Sans', monospace;
+            font-weight: 400;
+        }
+
+        .input-container input:disabled {
+            background: #f8f9fa;
+            color: #80868b;
+            cursor: not-allowed;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #5f6368;
+            margin-top: 6px;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .error-msg {
+            font-size: 12px;
+            color: #d93025;
+            margin-top: 6px;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 28px 0 24px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .btn-primary:hover {
+            background: #1765cc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-secondary {
+            background: #f1f3f4;
+            color: #1a73e8;
+            border: 1px solid #dadce0;
+        }
+
+        .btn-secondary:hover {
+            background: #e8eaed;
+        }
+
+        .btn-danger {
+            background: #fef7f5;
+            color: #d93025;
+            border: 1px solid #f4ccc8;
+        }
+
+        .btn-danger:hover {
+            background: #fce8e6;
+        }
+
+        .btn-success {
+            background: #e6f4ea;
+            color: #137333;
+            border: 1px solid #b6e0c3;
+        }
+
+        .btn-success:hover {
+            background: #ceead6;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 信息卡片 */
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 24px;
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid #e8eaed;
+        }
+
+        .info-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .binding-success {
+            background: #e8f0fe;
+            border-left: 4px solid #1a73e8;
+        }
+
+        .lock-card {
+            background: #fef7e0;
+            border-left: 4px solid #f9ab00;
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 8px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #e8eaed;
+        }
+
+        .detail-label {
+            width: 100px;
+            color: #5f6368;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #202124;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .price-tag {
+            background: #1a73e8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0 8px;
+        }
+
+        .listing-area {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px dashed #dadce0;
+        }
+
+        .footer-note {
+            background: #f8f9fa;
+            font-size: 12px;
+            color: #5f6368;
+            padding: 16px 32px;
+            text-align: center;
+            border-top: 1px solid #e8eaed;
+        }
+
+        @media (max-width: 550px) {
+            .content-pane {
+                padding: 20px;
+            }
+            .header-brand {
+                padding: 20px;
+            }
+            .region-chip {
+                padding: 10px 20px;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="gpc-container">
+    <div class="main-card">
+        <div class="header-brand">
+            <div class="brand-row">
+                <span class="material-symbols-outlined cloud-icon-lg">cloud</span>
+                <div class="brand-text">Google <span>Cloud</span> 结算中心</div>
+            </div>
+            <h1 class="page-title">收款账户 & 上架资质</h1>
+            <div class="page-desc">绑定中国大陆地区银行账户 · 生效后方可发布商品</div>
+        </div>
+        <div class="region-chip">
+            <span class="material-symbols-outlined" style="font-size: 18px; color:#f9ab00">flag</span>
+            <span><strong>🇨🇳 中国地区限定</strong> — 仅支持「中国银行一类卡」暂不支持其他银行</span>
+            <span class="badge-warning">合规要求</span>
+        </div>
+
+        <div class="content-pane" id="dynamicContent">
+            <!-- 动态表单和状态展示区 -->
+            <div id="formArea">
+                <div class="input-field">
+                    <label>持卡人姓名 (与银行预留一致)</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined">badge</span>
+                        <input type="text" id="holderName" placeholder="例: 李明轩" autocomplete="off">
+                    </div>
+                </div>
+                <div class="input-field">
+                    <label>归属银行</label>
+                    <div class="input-container" style="background:#f8f9fa;">
+                        <span class="material-symbols-outlined">account_balance</span>
+                        <input type="text" id="bankName" value="中国银行" readonly style="background:#f8f9fa; font-weight:500;">
+                    </div>
+                    <div class="helper-text">* 根据平台政策，仅限中国银行一类卡</div>
+                </div>
+                <div class="input-field">
+                    <label>中国银行一类卡卡号</label>
+                    <div class="input-container">
+                        <span class="material-symbols-outlined">credit_card</span>
+                        <input type="text" id="cardNumber" placeholder="6217 8888 1234 5678 901" maxlength="22">
+                    </div>
+                    <div id="cardInlineError" class="error-msg"></div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="bindButton">
+                        <span class="material-symbols-outlined" style="font-size:18px">link</span> 绑定收款账户
+                    </button>
+                    <button class="btn btn-secondary" id="clearFormButton">
+                        <span class="material-symbols-outlined" style="font-size:18px">cleaning_services</span> 清空表单
+                    </button>
+                </div>
+            </div>
+
+            <!-- 状态面板 (账户绑定状态 + 上架区块) -->
+            <div id="statusPanel">
+                <!-- 动态渲染绑定状态 && 商品上架操作区 -->
+            </div>
+        </div>
+        <div class="footer-note">
+            <span class="material-symbols-outlined" style="font-size:14px">gavel</span> 绑定生效期内不可上架 · 生效后(超过24h)即可提交429,560元预上架商品
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 核心业务逻辑 ----------
+    // key: google_cloud_binding_listing
+    // 数据结构: { isBound, holderName, bankName, cardNumber, bindTimestamp, listingStatus, listingPrice, listingApplied }
+    // listingStatus: 'none' (未上架), 'pending' (等待上架/预上架提交), 'listed' (已上架展示)
+    // 需求逻辑: 绑定后24小时内不可上架，只能取消绑定; 超过24小时后账户永久生效且不可更换，然后用户可以点击上架(预上架价格429560元)，上架后显示商品已在售。
+    // 上架后不可更改收款账户也符合业务规则。
+    const STORAGE_KEY = 'gcp_listing_binding_v3';
+    const LISTING_PRICE = 429560;
+    
+    // 辅助函数
+    function loadData() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch(e) { return null; }
+    }
+
+    function saveData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // 清除绑定(取消绑定) -> 同时会清除上架相关信息
+    function resetBindingAndListing() {
+        localStorage.removeItem(STORAGE_KEY);
+        renderFullUI();
+        showToast("🗑 已取消账户绑定，可重新绑定新的中国银行账户，上架记录已清空。", "info");
+    }
+
+    // 获取当前绑定状态: 'unbound', 'active'(可取消), 'effective'(永久生效不可取消)
+    function getBindingState() {
+        const data = loadData();
+        if (!data || !data.isBound) return { status: 'unbound', data: null, remainingMs: 0, isEffective: false };
+        const now = Date.now();
+        const boundTime = data.bindTimestamp;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        const expireTime = boundTime + twentyFourHours;
+        if (now >= expireTime) {
+            return { status: 'effective', data: data, remainingMs: 0, isEffective: true };
+        } else {
+            return { status: 'active', data: data, remainingMs: expireTime - now, isEffective: false };
+        }
+    }
+
+    // 上架状态获取 (是否已上架)
+    function getListingStatus() {
+        const data = loadData();
+        if (!data || !data.isBound) return { listingActive: false, listingApplied: false, message: '' };
+        if (data.listingApplied === true) {
+            return { listingActive: true, listingApplied: true, message: '✅ 商品已上架，预售价 ¥429,560' };
+        }
+        return { listingActive: false, listingApplied: false, message: '' };
+    }
+
+    // 执行绑定(严格校验)
+    function performBinding(holder, bankRaw, cardRaw) {
+        const normalizedBank = bankRaw.trim();
+        if (!normalizedBank.includes("中国银行")) {
+            showToast("❌ 绑定失败: 当前仅支持中国银行一类卡，暂不支持其他银行。", "error");
+            return false;
+        }
+        const cleanCard = cardRaw.replace(/\s/g, '');
+        if (!/^\d+$/.test(cleanCard)) {
+            showToast("❌ 卡号只能包含数字。", "error");
+            return false;
+        }
+        if (cleanCard.length < 16 || cleanCard.length > 19) {
+            showToast("❌ 卡号长度无效，中国银行一类卡为16-19位。", "error");
+            return false;
+        }
+        // 友好BIN提示
+        const validPrefixes = ['601382', '601388', '456351', '621785', '621786', '620061', '623208'];
+        const prefixOk = validPrefixes.some(p => cleanCard.startsWith(p));
+        if (!prefixOk) {
+            if (!confirm("⚠️ 卡号前缀非典型中国银行BIN码，请确认是否正确的中国银行一类卡？\n仍要继续绑定吗？")) {
+                return false;
+            }
+        }
+        if (!holder.trim() || holder.trim().length < 2) {
+            showToast("❌ 持卡人姓名不能为空且至少2个字符。", "error");
+            return false;
+        }
+        const currentState = getBindingState();
+        if (currentState.status === 'effective') {
+            showToast("🔒 账户已永久生效，无法更换或重新绑定。", "error");
+            return false;
+        }
+        if (currentState.status === 'active') {
+            showToast("⚠️ 已有有效绑定的账户且处于可取消期，请先取消当前绑定再重新绑定。", "error");
+            return false;
+        }
+        // 绑定新账户 重置上架状态
+        const newBinding = {
+            isBound: true,
+            holderName: holder.trim(),
+            bankName: "中国银行",
+            cardNumber: cleanCard,
+            bindTimestamp: Date.now(),
+            listingApplied: false,      // 未上架
+            listingPrice: LISTING_PRICE,
+            listingSubmitTime: null
+        };
+        saveData(newBinding);
+        showToast(`✅ 绑定成功！请检查卡号是否正确: ${maskCard(cleanCard)}。收款账户已绑定，一天后可用。当前不支持上架，期间可取消绑定，超过一天后不支持更换收款账户。`, "success");
+        renderFullUI();
+        return true;
+    }
+
+    // 提交上架 (仅在账户生效effective并且尚未上架时可调用)
+    function submitListing() {
+        const bindingState = getBindingState();
+        const data = loadData();
+        if (bindingState.status !== 'effective') {
+            showToast("⛔ 收款账户尚未生效 (需绑定超过24小时)，生效后才能提交上架商品。", "error");
+            return false;
+        }
+        if (!data) return false;
+        if (data.listingApplied === true) {
+            showToast("商品已经上架，请勿重复提交。", "info");
+            return false;
+        }
+        // 执行上架
+        data.listingApplied = true;
+        data.listingSubmitTime = Date.now();
+        saveData(data);
+        showToast(`🎉 上架成功！商品预售价 ¥${LISTING_PRICE.toLocaleString()} 已发布至Google Cloud 服务市场。`, "success");
+        renderFullUI();
+        return true;
+    }
+
+    function maskCard(card) {
+        if (!card || card.length < 8) return card;
+        return card.slice(0,4) + " •••• •••• " + card.slice(-4);
+    }
+
+    // 渲染整个界面 (账户状态 + 上架操作区)
+    function renderFullUI() {
+        const statusPanel = document.getElementById('statusPanel');
+        const formAreaDiv = document.getElementById('formArea');
+        const bindingState = getBindingState();
+        const listingInfo = getListingStatus();
+        const storedData = loadData();
+
+        // 根据绑定状态控制表单显示与可用性
+        if (bindingState.status === 'unbound') {
+            formAreaDiv.style.display = 'block';
+            enableFormFields(true);
+            // 渲染未绑定默认状态
+            statusPanel.innerHTML = `
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <span class="material-symbols-outlined" style="color:#1a73e8">info</span>
+                        <span>未绑定收款账户</span>
+                    </div>
+                    <div style="font-size:14px; color:#5f6368;">请填写中国银行一类卡信息完成绑定。绑定成功后将进入24小时观察期，观察期内可取消绑定，不可上架。</div>
+                </div>
+            `;
+        } 
+        else if (bindingState.status === 'active') {
+            // 已绑定但未生效(可取消期)
+            formAreaDiv.style.display = 'block';
+            enableFormFields(true);
+            const data = bindingState.data;
+            const remainingHours = Math.floor(bindingState.remainingMs / (1000*60*60));
+            const remainingMins = Math.floor((bindingState.remainingMs % (3600000)) / 60000);
+            statusPanel.innerHTML = `
+                <div class="info-card binding-success">
+                    <div class="info-card-header">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>⏳ 收款账户已绑定 · 生效倒计时 (可取消期)</span>
+                    </div>
+                    <div class="detail-row"><div class="detail-label">持卡人</div><div class="detail-value">${escapeHtml(data.holderName)}</div></div>
+                    <div class="detail-row"><div class="detail-label">开户银行</div><div class="detail-value">${escapeHtml(data.bankName)} (一类卡)</div></div>
+                    <div class="detail-row"><div class="detail-label">卡号</div><div class="detail-value">${maskCard(data.cardNumber)}</div></div>
+                    <div class="detail-row"><div class="detail-label">绑定时间</div><div class="detail-value">${new Date(data.bindTimestamp).toLocaleString()}</div></div>
+                    <div style="margin: 16px 0 8px; background:#e8eaed; border-radius: 32px; padding: 8px 16px; display: inline-block;">
+                        ⏰ <strong>剩余可取消时间: ${remainingHours}小时 ${remainingMins}分钟</strong>
+                    </div>
+                    <div style="margin-top: 12px; font-size:13px; color:#d93025;">⚠️ 在此期间可「取消绑定」，取消后可重新绑定其他账户。生效前不可上架商品。</div>
+                    <div style="margin-top: 16px;">
+                        <button id="cancelActiveBtn" class="btn btn-danger">
+                            <span class="material-symbols-outlined">cancel</span> 取消账户绑定
+                        </button>
+                    </div>
+                    <div class="listing-area" style="background:#fef2e0; border-radius: 20px; margin-top: 20px; padding: 12px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle">shopping_cart_off</span> 
+                        <strong>🔒 上架状态：不可上架</strong> — 账户需生效(绑定满24小时)后方可提交预上架商品。
+                    </div>
+                </div>
+            `;
+            const cancelBtn = document.getElementById('cancelActiveBtn');
+            if (cancelBtn) cancelBtn.addEventListener('click', () => resetBindingAndListing());
+        } 
+        else if (bindingState.status === 'effective') {
+            // 永久生效有效账户 (不可取消，不可重新绑定)
+            formAreaDiv.style.display = 'none';
+            const data = bindingState.data;
+            const hasListed = (storedData && storedData.listingApplied === true);
+            statusPanel.innerHTML = `
+                <div class="info-card lock-card">
+                    <div class="info-card-header">
+                        <span class="material-symbols-outlined" style="color:#f9ab00">lock_clock</span>
+                        <span>🔒 收款账户已永久生效 · 不支持更换</span>
+                    </div>
+                    <div class="detail-row"><div class="detail-label">持卡人</div><div class="detail-value">${escapeHtml(data.holderName)}</div></div>
+                    <div class="detail-row"><div class="detail-label">开户行</div><div class="detail-value">${escapeHtml(data.bankName)} (一类卡)</div></div>
+                    <div class="detail-row"><div class="detail-label">卡号</div><div class="detail-value">${maskCard(data.cardNumber)}</div></div>
+                    <div class="detail-row"><div class="detail-label">生效时间</div><div class="detail-value">${new Date(data.bindTimestamp + 24*3600000).toLocaleString()} 之后</div></div>
+                    <div style="margin: 16px 0 4px;"><span class="material-symbols-outlined" style="font-size:18px">verified</span> 状态：账户已验证，可进行商品上架</div>
+                </div>
+                <div class="info-card" style="margin-top: 20px; background: #e6f7ec;">
+                    <div class="info-card-header">
+                        <span class="material-symbols-outlined" style="color:#137333">sell</span>
+                        <span>💎 预上架商品 · Google Cloud 高级服务节点</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <div class="price-tag">
+                                <span class="material-symbols-outlined" style="font-size:20px">payments</span>
+                                ¥ ${LISTING_PRICE.toLocaleString()}
+                            </div>
+                            <div style="font-size:13px; margin-top: 8px;">包含基础架构授权 + 一年技术支持</div>
+                        </div>
+                        <div>
+                            ${!hasListed ? 
+                                `<button id="listingSubmitBtn" class="btn btn-primary" style="background:#137333;">
+                                    <span class="material-symbols-outlined">cloud_upload</span> 提交上架 (生效后)
+                                </button>` : 
+                                `<button class="btn btn-success" disabled style="background:#ceead6; color:#0d5a2e;">
+                                    <span class="material-symbols-outlined">check_circle</span> 已上架 · 商品在售
+                                </button>`
+                            }
+                        </div>
+                    </div>
+                    <div style="margin-top: 14px; font-size: 12px; background: white; border-radius: 20px; padding: 8px 12px;">
+                        ${!hasListed ? '✅ 账户已生效，可点击按钮将此商品上架。上架后永久挂售，收款账户不可更改。' : '🎉 您的商品已成功上架，售价 ¥429,560 ，等待客户下单。'}
+                    </div>
+                </div>
+            `;
+            if (!hasListed) {
+                const listingBtn = document.getElementById('listingSubmitBtn');
+                if (listingBtn) listingBtn.addEventListener('click', () => submitListing());
+            }
+            enableFormFields(false);
+        }
+
+        attachFormEventHandlers();
+        attachCardValidation();
+    }
+
+    function enableFormFields(enable) {
+        const holder = document.getElementById('holderName');
+        const card = document.getElementById('cardNumber');
+        const bank = document.getElementById('bankName');
+        const bindBtn = document.getElementById('bindButton');
+        const clearBtn = document.getElementById('clearFormButton');
+        if (holder) holder.disabled = !enable;
+        if (card) card.disabled = !enable;
+        if (bank) bank.disabled = !enable;
+        if (bindBtn) bindBtn.disabled = !enable;
+        if (clearBtn) clearBtn.disabled = !enable;
+    }
+
+    function attachFormEventHandlers() {
+        const bindBtn = document.getElementById('bindButton');
+        const clearBtn = document.getElementById('clearFormButton');
+        // 避免重复绑定，克隆替换
+        if (bindBtn) {
+            const newBind = bindBtn.cloneNode(true);
+            bindBtn.parentNode?.replaceChild(newBind, bindBtn);
+            newBind.addEventListener('click', (e) => {
+                e.preventDefault();
+                const holder = document.getElementById('holderName')?.value || '';
+                const bank = document.getElementById('bankName')?.value || '中国银行';
+                const card = document.getElementById('cardNumber')?.value || '';
+                performBinding(holder, bank, card);
+            });
+        }
+        if (clearBtn) {
+            const newClear = clearBtn.cloneNode(true);
+            clearBtn.parentNode?.replaceChild(newClear, clearBtn);
+            newClear.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('holderName').value = '';
+                document.getElementById('cardNumber').value = '';
+                document.getElementById('bankName').value = '中国银行';
+                const errDiv = document.getElementById('cardInlineError');
+                if (errDiv) errDiv.innerText = '';
+                showToast("表单已清空", "info");
+            });
+        }
+    }
+
+    function attachCardValidation() {
+        const cardInput = document.getElementById('cardNumber');
+        if (cardInput) {
+            cardInput.addEventListener('input', (e) => {
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.length > 19) val = val.slice(0,19);
+                e.target.value = val;
+                const errDiv = document.getElementById('cardInlineError');
+                if (val.length > 0 && (val.length < 16 || val.length > 19)) {
+                    errDiv.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">error</span> 卡号长度需16-19位数字';
+                } else {
+                    errDiv.innerHTML = '';
+                }
+            });
+        }
+    }
+
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.style.position = 'fixed';
+        toast.style.bottom = '30px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.backgroundColor = type === 'error' ? '#d93025' : (type === 'success' ? '#137333' : '#1a73e8');
+        toast.style.color = 'white';
+        toast.style.padding = '12px 24px';
+        toast.style.borderRadius = '48px';
+        toast.style.fontWeight = '500';
+        toast.style.fontSize = '14px';
+        toast.style.zIndex = '10000';
+        toast.style.fontFamily = "'Google Sans', Roboto";
+        toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.2)';
+        toast.style.maxWidth = '85%';
+        toast.style.textAlign = 'center';
+        toast.innerHTML = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.2s';
+            setTimeout(() => toast.remove(), 250);
+        }, 3000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 初始化 + 定时器更新倒计时
+    renderFullUI();
+    let interval = setInterval(() => {
+        const state = getBindingState();
+        if (state.status === 'active' || state.status === 'effective') {
+            renderFullUI();
+        }
+    }, 60000);
+    window.addEventListener('beforeunload', () => clearInterval(interval));
+</script>
+</body>
+</html>
