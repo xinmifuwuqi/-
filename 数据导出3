@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>数据库脱裤系统 - 安全导出控制台</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #f5f7fc;
+            margin: 0;
+            padding: 28px 24px;
+            color: #1e2a3a;
+        }
+        .app-container {
+            max-width: 1480px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            color: #1f2b38;
+            letter-spacing: -0.2px;
+            border-left: 4px solid #2c7da0;
+            padding-left: 20px;
+        }
+        .sub {
+            color: #4a627a;
+            border-left: 2px solid #8ba0bc;
+            padding-left: 20px;
+            margin-bottom: 28px;
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+        .badge {
+            background: #e9edf2;
+            padding: 6px 14px;
+            border-radius: 24px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #2c3e50;
+        }
+        .stats-bar {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 18px 24px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #dce3ec;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .total-size {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #1f6392;
+        }
+        .export-progress {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 20px 26px;
+            margin-bottom: 28px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            color: #2c4c6e;
+            font-weight: 500;
+        }
+        .progress-bar-bg {
+            background: #e6edf4;
+            border-radius: 40px;
+            overflow: hidden;
+            height: 28px;
+            box-shadow: inset 0 1px 2px #cbd6e3;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #2c7da0;
+            border-radius: 40px;
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            background-image: linear-gradient(90deg, #2a6f8f, #1f5e7e);
+        }
+        .servers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 36px;
+        }
+        .server-card {
+            background: #ffffff;
+            border-radius: 28px;
+            border: 1px solid #e4ebf3;
+            flex: 1;
+            min-width: 270px;
+            padding: 18px 22px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .server-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #cbdde9;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+            color: #1f3b4c;
+        }
+        .status-badge {
+            font-size: 0.7rem;
+            background: #eef2f7;
+            border-radius: 40px;
+            padding: 4px 12px;
+            font-weight: 500;
+            color: #2c5a74;
+        }
+        .data-row {
+            font-size: 0.8rem;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #ecf1f7;
+            padding: 6px 0;
+            color: #2c4c6c;
+        }
+        .button-group {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            border: none;
+            background: #e2e8f0;
+            padding: 9px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1f3b4c;
+            font-size: 0.85rem;
+            border: 1px solid #ccd8e6;
+        }
+        .btn-primary {
+            background: #2c7da0;
+            color: white;
+            border: none;
+            box-shadow: 0 1px 2px #bdd3e6;
+        }
+        .btn-primary:hover {
+            background: #236e8f;
+            transform: scale(0.98);
+        }
+        .btn-secondary {
+            background: #eef2f9;
+        }
+        .btn-secondary:hover {
+            background: #e2e8f2;
+        }
+        .download-area {
+            background: #fefefe;
+            border-radius: 28px;
+            border: 1px solid #dce5ef;
+            padding: 18px 24px;
+            margin-top: 16px;
+            margin-bottom: 24px;
+        }
+        .download-link {
+            background: #f1f6fd;
+            padding: 14px 18px;
+            border-radius: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .link-btn {
+            background: #2c7da0;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 32px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+        }
+        .link-btn:disabled {
+            background: #b9cedf;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .warning-note {
+            color: #b85c00;
+            background: #fff0e0;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+        .log-area {
+            background: #f8fafd;
+            border-radius: 24px;
+            padding: 18px 22px;
+            border: 1px solid #e2eaf1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            height: 260px;
+            overflow-y: auto;
+            color: #1f3a4e;
+        }
+        .log-line {
+            border-bottom: 1px solid #e5edf5;
+            padding: 6px 0;
+            font-family: monospace;
+        }
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.7rem;
+            color: #7e95ae;
+            border-top: 1px solid #e0e8f0;
+            padding-top: 20px;
+        }
+        @media (max-width: 780px) {
+            .servers-grid { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div>
+            <h1>数据库脱裤系统 · 全量安全导出</h1>
+            <div class="sub">串行导出 | 三节点集群（威尼斯人 / 米博体育 / 929大熊）| 总数据量 192.35 GB</div>
+        </div>
+        <div class="badge">
+            FTP/SFTP 已禁用 | 数据安全保护已开启
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <span>原始数据总量</span>
+        <span class="total-size">192.35 GB</span>
+        <span>导出耗时规划: 17 分钟 00 秒</span>
+        <span>备份格式: SQL + JSON 打包</span>
+    </div>
+
+    <div class="export-progress">
+        <div class="progress-header">
+            <span>全局导出进度 (三服务器顺序执行)</span>
+            <span id="globalPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-fill" id="globalFill" style="width: 0%;">0%</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 14px; gap: 12px;">
+            <div>服务器1: <span id="s1Status">等待</span></div>
+            <div>服务器2: <span id="s2Status">等待</span></div>
+            <div>服务器3: <span id="s3Status">等待</span></div>
+        </div>
+    </div>
+
+    <div class="servers-grid">
+        <!-- 澳门威尼斯人 -->
+        <div class="server-card">
+            <div class="server-name">
+                澳门威尼斯人
+                <span class="status-badge" id="veniceBadge">待导出</span>
+            </div>
+            <div class="data-row"><span>有效用户数:</span><span>12,847 (含user/下级/手机号)</span></div>
+            <div class="data-row"><span>下注流水:</span><span>189.2万条</span></div>
+            <div class="data-row"><span>充值/提现记录:</span><span>充值23.4k 提现19.2k</span></div>
+            <div class="data-row"><span>注册IP/常用IP/绑定记录:</span><span>全量IP库+绑定关系</span></div>
+            <div class="data-row"><span>银行卡/支付宝提现信息:</span><span>绑定表完整</span></div>
+            <div class="data-row"><span>下级聚合数据:</span><span>下级流水/充值总和/提现总和/下注总和/佣金总和</span></div>
+            <div class="data-row"><span>代理返佣配置:</span><span>阶梯返佣比例表</span></div>
+            <div class="data-row"><span>数据块大小:</span><span>74.2 GB</span></div>
+        </div>
+        <!-- 米博体育 用户数34675 -->
+        <div class="server-card">
+            <div class="server-name">
+                米博体育
+                <span class="status-badge" id="miboBadge">待导出</span>
+            </div>
+            <div class="data-row"><span>有效用户总数:</span><span>34,675 (完整档案+下级树)</span></div>
+            <div class="data-row"><span>投注记录:</span><span>237.6万条注单</span></div>
+            <div class="data-row"><span>充值/提现流水:</span><span>完整金融日志</span></div>
+            <div class="data-row"><span>绑定手机/注册IP/常用IP:</span><span>多IP历史</span></div>
+            <div class="data-row"><span>银行卡/支付宝提现信息:</span><span>密文导出</span></div>
+            <div class="data-row"><span>下级聚合数据:</span><span>下级流水/充值总和/提现总和/下注总和/佣金总和</span></div>
+            <div class="data-row"><span>代理返佣报表:</span><span>周期佣金档案</span></div>
+            <div class="data-row"><span>数据块大小:</span><span>68.5 GB</span></div>
+        </div>
+        <!-- 929大熊 -->
+        <div class="server-card">
+            <div class="server-name">
+                929大熊
+                <span class="status-badge" id="bearBadge">待导出</span>
+            </div>
+            <div class="data-row"><span>有效用户UID/账号:</span><span>21,204 人</span></div>
+            <div class="data-row"><span>详细充值提现记录:</span><span>精确到秒/接单商家</span></div>
+            <div class="data-row"><span>接单商家映射:</span><span>商家ID/商户名/费率</span></div>
+            <div class="data-row"><span>注册手机号/密码哈希:</span><span>密文存储</span></div>
+            <div class="data-row"><span>下级结构与佣金:</span><span>团队业绩数据</span></div>
+            <div class="data-row"><span>绑定银行卡/支付宝提现信息:</span><span>完整提取</span></div>
+            <div class="data-row"><span>数据块大小:</span><span>49.65 GB</span></div>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-primary" id="startExportBtn">开始全量脱裤导出 (17分钟)</button>
+        <button class="btn btn-secondary" id="resetBtn">重置导出状态</button>
+    </div>
+
+    <!-- 安全下载区域: 备份完成后12小时内可下载，过期24小时 -->
+    <div class="download-area" id="downloadArea">
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center;">
+            <div>
+                <span style="font-weight: 600;">安全下载通道</span>
+                <div style="font-size: 0.7rem; color: #4a6f8f; margin-top: 4px;">FTP/SFTP已禁用，仅通过web下载 | 备份完成后12小时内有效，过期时间24小时自动清除</div>
+            </div>
+            <span id="expiryInfo" class="warning-note">未生成备份</span>
+        </div>
+        <div id="downloadLinkContainer" style="margin-top: 14px;">
+            <div class="download-link">
+                <span>完整备份文件: full_dump_192.35GB_3servers.zip</span>
+                <button id="downloadBackupBtn" class="link-btn" disabled>无法下载 (等待备份)</button>
+            </div>
+            <div id="expiryTimerMsg" style="font-size: 0.7rem; margin-top: 8px; color: #2c6280;"></div>
+        </div>
+    </div>
+
+    <div class="log-area" id="logPanel">
+        <div class="log-line">[系统] 控制台已启动 | 数据安全保护启用，FTP/SFTP通道已封锁</div>
+        <div class="log-line">[系统] 总数据量192.35GB，预计17分钟全量导出 | 备份完成后12小时内可下载，过期时间24小时</div>
+        <div class="log-line">[系统] 服务器1(威尼斯人) 用户12847人 | 服务器2(米博体育) 用户34675人 | 服务器3(929大熊) 用户21204人</div>
+    </div>
+    <footer>安全策略: 禁用外部FTP/SFTP，仅限web控制台下载。备份生成后留存24小时，过期自动删除。</footer>
+</div>
+
+<script>
+    // 总耗时固定为17分钟 (1020秒)
+    const TOTAL_EXPORT_MINUTES = 17;     // 17分钟完成100%进度
+    // 根据数据量比例分配每个服务器消耗的时间 (基于192.35GB)
+    const totalDataGB = 192.35;
+    const servers = [
+        { id: 'venice', name: '澳门威尼斯人', sizeGB: 74.2, timeMinutes: (74.2 / totalDataGB) * TOTAL_EXPORT_MINUTES, userCount: 12847 },
+        { id: 'mibo', name: '米博体育', sizeGB: 68.5, timeMinutes: (68.5 / totalDataGB) * TOTAL_EXPORT_MINUTES, userCount: 34675 },
+        { id: 'bear', name: '929大熊', sizeGB: 49.65, timeMinutes: (49.65 / totalDataGB) * TOTAL_EXPORT_MINUTES, userCount: 21204 }
+    ];
+    // 精确修正总时长到17分钟
+    const sumMinutes = servers.reduce((a,b)=>a+b.timeMinutes,0);
+    if(Math.abs(sumMinutes - TOTAL_EXPORT_MINUTES) > 0.001) {
+        servers[2].timeMinutes += (TOTAL_EXPORT_MINUTES - sumMinutes);
+    }
+    
+    // DOM 元素
+    const globalFill = document.getElementById('globalFill');
+    const globalPercentSpan = document.getElementById('globalPercent');
+    const s1StatusSpan = document.getElementById('s1Status');
+    const s2StatusSpan = document.getElementById('s2Status');
+    const s3StatusSpan = document.getElementById('s3Status');
+    const veniceBadge = document.getElementById('veniceBadge');
+    const miboBadge = document.getElementById('miboBadge');
+    const bearBadge = document.getElementById('bearBadge');
+    const logPanel = document.getElementById('logPanel');
+    const startBtn = document.getElementById('startExportBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+    const expiryInfoSpan = document.getElementById('expiryInfo');
+    const expiryTimerMsg = document.getElementById('expiryTimerMsg');
+
+    let isExporting = false;
+    let exportInterrupted = false;
+    let backupReady = false;
+    let expiryTimestamp = null;
+    let expiryInterval = null;
+    let activeCleanup = null;
+    let currentExportRaf = null;
+    
+    function addLog(msg, type = 'info') {
+        const logDiv = document.createElement('div');
+        logDiv.className = 'log-line';
+        const prefix = type === 'success' ? '[成功]' : (type === 'warn' ? '[警告]' : '[信息]');
+        const timeStr = new Date().toLocaleTimeString();
+        logDiv.innerHTML = `${prefix} ${timeStr} - ${msg}`;
+        if(type === 'success') logDiv.style.color = '#1f7840';
+        else if(type === 'warn') logDiv.style.color = '#b95c00';
+        else logDiv.style.color = '#2c6280';
+        logPanel.appendChild(logDiv);
+        logDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        while(logPanel.children.length > 280) logPanel.removeChild(logPanel.firstChild);
+    }
+
+    function updateServerStatus(serverId, statusText) {
+        let statusSpan, badgeSpan;
+        if(serverId === 'venice') { statusSpan = s1StatusSpan; badgeSpan = veniceBadge; }
+        else if(serverId === 'mibo') { statusSpan = s2StatusSpan; badgeSpan = miboBadge; }
+        else { statusSpan = s3StatusSpan; badgeSpan = bearBadge; }
+        if(statusSpan) statusSpan.innerText = statusText;
+        if(badgeSpan) badgeSpan.innerText = statusText;
+    }
+    
+    // 基于精确时间的服务器导出 (进度实时跟随)
+    function exportServerByTimer(server, onProgress) {
+        return new Promise((resolve) => {
+            const durationMs = server.timeMinutes * 60 * 1000;
+            const startTime = Date.now();
+            let timerId = null;
+            let finished = false;
+            const update = () => {
+                if(finished) return;
+                const elapsed = Date.now() - startTime;
+                let percent = Math.min(100, (elapsed / durationMs) * 100);
+                if(percent >= 99.99) percent = 100;
+                onProgress(percent);
+                if(percent >= 100) {
+                    finished = true;
+                    if(timerId) clearInterval(timerId);
+                    resolve();
+                }
+            };
+            update(); // 立即更新一次
+            timerId = setInterval(update, 200); // 每200ms刷新一次，进度平滑
+            const timeoutFallback = setTimeout(() => {
+                if(!finished) {
+                    finished = true;
+                    if(timerId) clearInterval(timerId);
+                    onProgress(100);
+                    resolve();
+                }
+            }, durationMs + 500);
+            const cleanup = () => {
+                clearTimeout(timeoutFallback);
+                if(timerId) clearInterval(timerId);
+                finished = true;
+            };
+            if(activeCleanup) activeCleanup();
+            activeCleanup = cleanup;
+        });
+    }
+    
+    function resetDownloadZone() {
+        backupReady = false;
+        if(expiryInterval) clearInterval(expiryInterval);
+        expiryTimestamp = null;
+        downloadBackupBtn.disabled = true;
+        downloadBackupBtn.innerText = '无法下载 (等待备份)';
+        expiryInfoSpan.innerText = '未生成备份';
+        expiryTimerMsg.innerText = '';
+    }
+    
+    function activateBackupDownload() {
+        const now = Date.now();
+        expiryTimestamp = now + 24 * 60 * 60 * 1000;
+        backupReady = true;
+        downloadBackupBtn.disabled = false;
+        downloadBackupBtn.innerText = '立即下载完整备份 (ZIP)';
+        const expiryDate = new Date(expiryTimestamp);
+        expiryInfoSpan.innerHTML = `备份可用: 生成后12小时内可下载 · 彻底过期: ${expiryDate.toLocaleString()}`;
+        updateExpiryCountdown();
+        if(expiryInterval) clearInterval(expiryInterval);
+        expiryInterval = setInterval(updateExpiryCountdown, 1000);
+        addLog('备份已就绪，可在12小时内通过web下载(过期时间24小时)。FTP/SFTP禁用通道', 'success');
+    }
+    
+    function updateExpiryCountdown() {
+        if(!backupReady || !expiryTimestamp) {
+            expiryTimerMsg.innerText = '';
+            return;
+        }
+        const now = Date.now();
+        const twelveHoursMs = 12 * 60 * 60 * 1000;
+        const downloadDeadline = expiryTimestamp - (24 * 60 * 60 * 1000) + twelveHoursMs;
+        const availableUntil = Math.min(expiryTimestamp, downloadDeadline);
+        if(now >= expiryTimestamp) {
+            backupReady = false;
+            downloadBackupBtn.disabled = true;
+            downloadBackupBtn.innerText = '备份已过期 (超过24小时)';
+            expiryInfoSpan.innerText = '备份已过期，请重新导出';
+            expiryTimerMsg.innerText = '文件已过期，无法下载';
+            if(expiryInterval) clearInterval(expiryInterval);
+            return;
+        }
+        if(now >= availableUntil) {
+            downloadBackupBtn.disabled = true;
+            downloadBackupBtn.innerText = '下载窗口已关闭 (12小时已过)';
+            expiryTimerMsg.innerText = '可下载窗口12小时已结束，文件已过期。';
+        } else {
+            downloadBackupBtn.disabled = false;
+            const remainMs = availableUntil - now;
+            const remainHours = Math.floor(remainMs / 3600000);
+            const remainMins = Math.floor((remainMs % 3600000) / 60000);
+            expiryTimerMsg.innerText = `下载链接有效剩余时间: ${remainHours}小时 ${remainMins}分钟 (到期后不可下载)`;
+        }
+    }
+    
+    function downloadBackup() {
+        if(!backupReady) {
+            addLog('备份尚未生成或已过期，请完成导出后再下载', 'warn');
+            return;
+        }
+        const now = Date.now();
+        const twelveH = 12 * 60 * 60 * 1000;
+        const downloadWindowEnd = expiryTimestamp - (24*60*60*1000) + twelveH;
+        if(now >= downloadWindowEnd || now >= expiryTimestamp) {
+            addLog('下载窗口已关闭或备份已过期，无法下载', 'warn');
+            downloadBackupBtn.disabled = true;
+            return;
+        }
+        addLog('开始下载数据库全量备份文件 (full_dump_192.35GB_3servers.zip) 安全web渠道', 'success');
+        const blob = new Blob(["Database full backup archive containing user/agent/payment/betting records from three servers (威尼斯人,米博体育,929大熊). Total 192.35GB data exported within 17 minutes."], {type: "application/zip"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'full_dump_192.35GB_3servers.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        addLog('备份文件已通过web渠道下载 (成功触发)', 'success');
+    }
+    
+    async function startFullExport() {
+        if(isExporting) {
+            addLog('已有导出任务进行中，请等待完成或重置', 'warn');
+            return;
+        }
+        isExporting = true;
+        exportInterrupted = false;
+        resetDownloadZone();
+        addLog('启动全库脱裤任务 | 目标: 三个数据库完整导出(user,下级,资金,投注,IP,绑定卡/支付宝,代理佣金等)', 'success');
+        addLog(`预计总耗时: ${TOTAL_EXPORT_MINUTES}分0秒 | 数据总量192.35GB，进度条将会在${TOTAL_EXPORT_MINUTES}分钟内精确走完100%`, 'success');
+        updateServerStatus('venice', '等待导出');
+        updateServerStatus('mibo', '等待导出');
+        updateServerStatus('bear', '等待导出');
+        globalFill.style.width = '0%';
+        globalPercentSpan.innerText = '0%';
+        
+        const totalWeight = servers.reduce((a,b)=>a+b.timeMinutes,0);
+        try {
+            for(let i=0;i<servers.length;i++) {
+                if(exportInterrupted || !isExporting) break;
+                const sv = servers[i];
+                const sid = sv.id;
+                updateServerStatus(sid, `导出中 0%`);
+                addLog(`[${sv.name}] 开始全量导出，数据量 ${sv.sizeGB.toFixed(2)} GB，包含用户表/下级/手机号/下注/充提/绑定记录/IP/银行卡支付宝/下级聚合/代理返佣。`, 'info');
+                addLog(`   -> 有效用户数: ${sv.userCount.toLocaleString()} 人`, 'info');
+                let lastPct = 0;
+                await exportServerByTimer(sv, (pct) => {
+                    const rounded = Math.floor(pct);
+                    if(rounded !== lastPct) {
+                        lastPct = rounded;
+                        updateServerStatus(sid, `导出中 ${rounded}%`);
+                    }
+                    // 计算全局进度 (基于时间权重)
+                    let completedPrev = servers.slice(0,i).reduce((a,b)=>a+b.timeMinutes,0);
+                    let currentContribution = sv.timeMinutes * (pct / 100);
+                    let overall = ((completedPrev + currentContribution) / totalWeight) * 100;
+                    overall = Math.min(99.99, overall);
+                    globalFill.style.width = `${overall}%`;
+                    globalPercentSpan.innerText = `${overall.toFixed(1)}%`;
+                    if(pct >= 99.9) {
+                        let finalServerOverall = ((completedPrev + sv.timeMinutes) / totalWeight) * 100;
+                        globalFill.style.width = `${Math.min(100, finalServerOverall)}%`;
+                        globalPercentSpan.innerText = `${Math.min(100, finalServerOverall).toFixed(1)}%`;
+                    }
+                });
+                updateServerStatus(sid, `完成`);
+                addLog(`[${sv.name}] 导出完毕，耗时 ${sv.timeMinutes.toFixed(2)} 分钟，数据大小 ${sv.sizeGB.toFixed(2)} GB`, 'success');
+                let completedNow = servers.slice(0,i+1).reduce((a,b)=>a+b.timeMinutes,0);
+                let finalOverall = (completedNow / totalWeight) * 100;
+                globalFill.style.width = `${finalOverall}%`;
+                globalPercentSpan.innerText = `${finalOverall.toFixed(1)}%`;
+            }
+            if(!exportInterrupted && isExporting) {
+                globalFill.style.width = '100%';
+                globalPercentSpan.innerText = '100%';
+                addLog(`所有服务器数据库脱裤完成！总数据量192.35GB导出成功，整体耗时 ${TOTAL_EXPORT_MINUTES} 分钟`, 'success');
+                addLog('备份文件生成完毕，已启用安全下载通道(12小时内有效，过期24小时自动失效)。', 'success');
+                activateBackupDownload();
+            } else if(exportInterrupted) {
+                addLog('导出被手动重置，未生成完整备份，下载通道未激活', 'warn');
+            }
+        } catch(e) {
+            addLog(`导出异常: ${e.message}`, 'warn');
+        } finally {
+            isExporting = false;
+            if(activeCleanup) activeCleanup();
+            activeCleanup = null;
+        }
+    }
+    
+    function resetExport() {
+        if(isExporting) {
+            addLog('正在终止当前导出任务并重置...', 'warn');
+            exportInterrupted = true;
+            isExporting = false;
+            if(activeCleanup) activeCleanup();
+            activeCleanup = null;
+        }
+        updateServerStatus('venice', '等待导出');
+        updateServerStatus('mibo', '等待导出');
+        updateServerStatus('bear', '等待导出');
+        globalFill.style.width = '0%';
+        globalPercentSpan.innerText = '0%';
+        resetDownloadZone();
+        addLog('系统已重置，可重新开始全量导出(17分钟完整流程)', 'success');
+    }
+    
+    startBtn.addEventListener('click', startFullExport);
+    resetBtn.addEventListener('click', resetExport);
+    downloadBackupBtn.addEventListener('click', downloadBackup);
+    addLog('界面初始化完成 | 导出时长已校准为17分钟，进度条将随真实时间同步递增至100%', 'info');
+</script>
+</body>
+</html>
