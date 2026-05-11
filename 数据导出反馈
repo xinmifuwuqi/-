@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>数据备份完成报告 | 服务器存储状态</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #eef2f7;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 主容器卡片 - 浅色主题 */
+        .backup-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 核心报告卡片 */
+        .report-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #e9edf2;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        }
+
+        /* 头部状态区 */
+        .status-header {
+            background: #f8fafc;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .badge-critical {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid #fecaca;
+        }
+
+        .protocol-badge {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: monospace;
+            border: 1px solid #cbd5e1;
+        }
+
+        .timestamp {
+            color: #475569;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #f1f5f9;
+            padding: 0.3rem 1rem;
+            border-radius: 60px;
+        }
+
+        /* 主要信息区域 */
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 2rem 2rem 1.2rem 2rem;
+            border-bottom: 1px solid #e9edf2;
+            background: #ffffff;
+        }
+
+        .info-block {
+            flex: 1;
+            min-width: 200px;
+            background: #f9fbfd;
+            border-radius: 1.2rem;
+            padding: 1rem 1.3rem;
+            border-left: 3px solid #2563eb;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.6rem;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        .info-value small {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #5b6e8c;
+        }
+
+        .restriction-note {
+            background: #fffbeb;
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            margin: 0.5rem 2rem 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-left: 4px solid #ea580c;
+            color: #92400e;
+            font-size: 0.85rem;
+        }
+
+        /* 数据清单表格区域 */
+        .dataset-section {
+            padding: 1rem 2rem 2rem 2rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0.5rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid #2563eb;
+            padding-left: 1rem;
+        }
+
+        .fields-container {
+            background: #fefefe;
+            border-radius: 1.2rem;
+            border: 1px solid #eef2f6;
+            overflow-x: auto;
+        }
+
+        .fields-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 0.7rem;
+            padding: 1.2rem;
+        }
+
+        .field-item {
+            background: #fafcff;
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            border: 1px solid #e9edf2;
+            transition: all 0.2s;
+        }
+
+        .field-item:hover {
+            border-color: #94a3b8;
+            background: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .field-icon {
+            width: 26px;
+            height: 26px;
+            background: #eef2ff;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .field-name {
+            font-family: monospace;
+            font-weight: 500;
+            color: #1f2a3e;
+            letter-spacing: 0.2px;
+        }
+
+        .badge-sensitive {
+            background: #fef9c3;
+            color: #854d0e;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 20px;
+            margin-left: 8px;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            padding: 1rem 2rem 1.5rem 2rem;
+            background: #f9fafb;
+            font-size: 0.75rem;
+            text-align: center;
+            color: #4a5a72;
+            border-top: 1px solid #e9edf2;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .extract-url {
+            background: #f1f5f9;
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #1f4a8c;
+        }
+
+        .footer-extra {
+            padding: 0rem 2rem 1.5rem 2rem;
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            border-top: 1px solid #edf2f7;
+            margin-top: 0.2rem;
+            background: #ffffff;
+            border-radius: 0 0 1.5rem 1.5rem;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 1rem;
+            }
+            .info-block {
+                min-width: 100%;
+            }
+            .fields-grid {
+                grid-template-columns: 1fr;
+            }
+            .status-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="backup-container">
+    <div class="report-card">
+        <!-- 头部状态栏: 警示 FTP/SFTP 禁用, 备份完成标识 (无表情符号) -->
+        <div class="status-header">
+            <div class="badge-critical">
+                [状态] 备份已完成 · 仅限本机存储
+            </div>
+            <div class="protocol-badge">
+                FTP 已禁用  |  SFTP 已禁用
+            </div>
+            <div class="timestamp">
+                备份时间: 2026-05-11 14:32:19 UTC+8
+            </div>
+        </div>
+
+        <!-- 核心存储信息 + 限制说明 -->
+        <div class="info-grid">
+            <div class="info-block">
+                <div class="info-label">备份文件名称</div>
+                <div class="info-value">full_dump_192.35GB_3servers.zip</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">数据容量 / 源服务器</div>
+                <div class="info-value">192.35 GB <small>| 聚合自 3 台核心服务器</small></div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">提取服务器端点</div>
+                <div class="info-value">929.com <small>(仅限内部内网访问)</small></div>
+            </div>
+        </div>
+
+        <!-- 安全策略: 24小时后本机存储 + 仅能做数据提取 (无图片) -->
+        <div class="restriction-note">
+            <span style="font-weight:600;">[存储策略限制]</span>
+            <span>当前服务器禁用一切远程文件协议 (FTP/SFTP)。数据备份完成后，仅能在 <strong style="color:#c2410c;">备份完成24小时后</strong> 方可于本机存储介质中提取归档文件。所有数据暂存于加密卷，提取路径仅限内部白名单。</span>
+        </div>
+
+        <!-- 字段清单: 完整展示所有必须的数据字样 -->
+        <div class="dataset-section">
+            <div class="section-title">
+                本次备份包含的数据字段明细
+                <span class="badge-sensitive" style="background:#fef9c3;">个人/金融/敏感信息</span>
+            </div>
+            <div class="fields-container">
+                <div class="fields-grid">
+                    <!-- 按照要求完整列出所有: 用户、下级数据、手机号、下注流水、充值记录，提现记录，绑定记录，注册IP地址，常用IP地址，绑定银行卡支付宝提现信息，平台账号，注册手机号，注册密码，下级流水，下级充值总和，下级提现总和，下级下注总和，下级佣金总和，代理返佣 -->
+                    <div class="field-item"><div class="field-icon">U</div><div class="field-name">用户</div><span class="badge-sensitive">核心</span></div>
+                    <div class="field-item"><div class="field-icon">L</div><div class="field-name">下级数据</div><span class="badge-sensitive">层级</span></div>
+                    <div class="field-item"><div class="field-icon">M</div><div class="field-name">手机号</div><span class="badge-sensitive">PII</span></div>
+                    <div class="field-item"><div class="field-icon">B</div><div class="field-name">下注流水</div><span class="badge-sensitive">交易</span></div>
+                    <div class="field-item"><div class="field-icon">D</div><div class="field-name">充值记录</div><span class="badge-sensitive">财务</span></div>
+                    <div class="field-item"><div class="field-icon">W</div><div class="field-name">提现记录</div><span class="badge-sensitive">财务</span></div>
+                    <div class="field-item"><div class="field-icon">R</div><div class="field-name">绑定记录</div><span class="badge-sensitive">关联</span></div>
+                    <div class="field-item"><div class="field-icon">IP</div><div class="field-name">注册IP地址</div><span class="badge-sensitive">安全</span></div>
+                    <div class="field-item"><div class="field-icon">IP</div><div class="field-name">常用IP地址</div><span class="badge-sensitive">行为</span></div>
+                    <div class="field-item"><div class="field-icon">PA</div><div class="field-name">绑定银行卡支付宝提现信息</div><span class="badge-sensitive">金流</span></div>
+                    <div class="field-item"><div class="field-icon">AC</div><div class="field-name">平台账号</div><span class="badge-sensitive">登录</span></div>
+                    <div class="field-item"><div class="field-icon">MB</div><div class="field-name">注册手机号</div><span class="badge-sensitive">认证</span></div>
+                    <div class="field-item"><div class="field-icon">PW</div><div class="field-name">注册密码</div><span class="badge-sensitive" style="background:#ffdede;">加密存储</span></div>
+                    <div class="field-item"><div class="field-icon">FL</div><div class="field-name">下级流水</div><span class="badge-sensitive">代理统计</span></div>
+                    <div class="field-item"><div class="field-icon">CS</div><div class="field-name">下级充值总和</div><span class="badge-sensitive">聚合</span></div>
+                    <div class="field-item"><div class="field-icon">WS</div><div class="field-name">下级提现总和</div><span class="badge-sensitive">聚合</span></div>
+                    <div class="field-item"><div class="field-icon">BS</div><div class="field-name">下级下注总和</div><span class="badge-sensitive">风控</span></div>
+                    <div class="field-item"><div class="field-icon">CM</div><div class="field-name">下级佣金总和</div><span class="badge-sensitive">返佣基础</span></div>
+                    <div class="field-item"><div class="field-icon">AR</div><div class="field-name">代理返佣</div><span class="badge-sensitive">分润</span></div>
+                </div>
+            </div>
+            <!-- 辅助说明：信息完整覆盖 -->
+            <div style="margin-top: 1rem; font-size:0.7rem; background:#f8fafc; border-radius: 20px; padding: 0.5rem 1rem; color:#3b5a7f;">
+                [确认] 上述所有字段均已按完整备份策略归档于 <strong>full_dump_192.35GB_3servers.zip</strong> ，包含用户/下级完整画像、资金流水、IP指纹及代理体系数据。
+            </div>
+        </div>
+
+        <!-- 规定24小时后存储至本机的提取提示及服务器929.com信息 -->
+        <div class="footer-note">
+            <div class="extract-url">
+                数据提取地址 (仅限内网/本机): \\STORAGE-NODE\backup_archive\full_dump_192.35GB_3servers.zip
+            </div>
+            <div class="extract-url">
+                关联提取服务器: 929.com/full_dump (需通过专用跳板 + 时间限制)
+            </div>
+            <div>
+                本机存储可用窗口: 备份完成 <strong>24小时后</strong> (预计 2026-05-12 14:32:19 后解锁)
+            </div>
+        </div>
+
+        <!-- 安全性说明: 明确禁止远程传输 且无表情/图片 -->
+        <div class="footer-extra">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between;">
+                <span>[安全策略] 依据安全策略：当前服务器已永久禁用FTP及SFTP协议，任何远程文件访问请求均被拒绝。备份数据仅可在24小时后从本机存储读取。</span>
+                <span>[快照内容] 备份快照包含全部下级关系树、代理佣金模型、以及银行卡/支付宝提现关联凭证 (脱敏处理字段已做静态掩码)。</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 控制台审计脚本 - 无视觉元素干扰，仅用于展示备份元数据 -->
+<script>
+    (function() {
+        // 静态页面展示备份信息，无交互操作；输出备份摘要至控制台(用于内部审计)
+        const backupMeta = {
+            archiveName: "full_dump_192.35GB_3servers.zip",
+            totalSizeGB: "192.35",
+            servers: 3,
+            extractionEndpoint: "929.com/server_dumps",
+            disabledProtocols: ["FTP", "SFTP"],
+            retentionPolicyHours: 24,
+            dataFieldsIncluded: [
+                "用户","下级数据","手机号","下注流水","充值记录","提现记录","绑定记录",
+                "注册IP地址","常用IP地址","绑定银行卡支付宝提现信息","平台账号","注册手机号",
+                "注册密码","下级流水","下级充值总和","下级提现总和","下级下注总和",
+                "下级佣金总和","代理返佣"
+            ],
+            backupTimestamp: new Date().toISOString()
+        };
+        console.log("===== 数据备份完整性报告 (浅色主题/无图片) =====");
+        console.log(`备份文件: ${backupMeta.archiveName} (${backupMeta.totalSizeGB}GB from ${backupMeta.servers} servers)`);
+        console.log(`传输协议限制: ${backupMeta.disabledProtocols.join(" & ")} 已被禁用`);
+        console.log(`本机存储可用倒计时: 备份完成需等待 ${backupMeta.retentionPolicyHours} 小时方可提取`);
+        console.log("包含字段总数:", backupMeta.dataFieldsIncluded.length);
+        console.log("字段清单:", backupMeta.dataFieldsIncluded.join(", "));
+        console.log("数据提取服务器: 929.com (仅限站内授权)");
+        console.log("备份状态: 成功写入加密卷 => 本机暂存区");
+        console.log("策略提示: FTP/SFTP完全禁止，任何远程下载请求均被防火墙拦截。备份数据24小时后可在本机存储位置访问。");
+    })();
+</script>
+</body>
+</html>
