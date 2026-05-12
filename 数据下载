@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>数据下载就绪 | 全量备份提取</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #eef2f7;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .backup-container {
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #e9edf2;
+        }
+
+        /* 头部状态 - 已就绪 */
+        .status-header {
+            background: #f8fafc;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .badge-ready {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .protocol-badge {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: monospace;
+            border: 1px solid #cbd5e1;
+        }
+
+        .timestamp {
+            color: #475569;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #f1f5f9;
+            padding: 0.3rem 1rem;
+            border-radius: 60px;
+        }
+
+        /* 主信息区域 */
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 2rem 2rem 1.2rem 2rem;
+            border-bottom: 1px solid #e9edf2;
+            background: #ffffff;
+        }
+
+        .info-block {
+            flex: 1;
+            min-width: 200px;
+            background: #f9fbfd;
+            border-radius: 1.2rem;
+            padding: 1rem 1.3rem;
+            border-left: 3px solid #2563eb;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.6rem;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .info-value small {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #5b6e8c;
+        }
+
+        .restriction-note {
+            background: #e6f7ec;
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            margin: 0.5rem 2rem 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-left: 4px solid #2e7d32;
+            color: #1e4620;
+            font-size: 0.85rem;
+        }
+
+        /* 下载控制台 */
+        .download-section {
+            padding: 1.5rem 2rem 2rem 2rem;
+            background: #ffffff;
+        }
+
+        .download-card {
+            background: #f9fafb;
+            border-radius: 1.2rem;
+            padding: 1.6rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .download-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #0f172a;
+            margin-bottom: 1rem;
+            border-left: 3px solid #2563eb;
+            padding-left: 0.8rem;
+        }
+
+        .download-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            background: #ffffff;
+            padding: 1rem 1.2rem;
+            border-radius: 1rem;
+            margin-bottom: 1.8rem;
+            border: 1px solid #eef2f6;
+        }
+
+        .meta-item {
+            flex: 1;
+        }
+
+        .meta-label {
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .meta-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-top: 0.25rem;
+            font-family: monospace;
+        }
+
+        .eta-warning {
+            background: #fffbeb;
+            border-radius: 0.9rem;
+            padding: 0.9rem 1.2rem;
+            margin: 1rem 0 1.8rem 0;
+            border-left: 4px solid #f97316;
+            color: #9b4a0a;
+            font-size: 0.85rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .btn-download {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.85rem 2rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            font-family: inherit;
+        }
+
+        .btn-download:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .btn-download:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 0.8rem 1.6rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .btn-secondary:hover {
+            background: #e6edf4;
+        }
+
+        .progress-area {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-bar-bg {
+            background: #e2e8f0;
+            border-radius: 40px;
+            height: 8px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #2563eb;
+            border-radius: 40px;
+            transition: width 0.2s;
+        }
+
+        .status-message {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: #2c5e9c;
+            font-family: monospace;
+        }
+
+        .fields-shortlist {
+            margin-top: 1.2rem;
+            font-size: 0.7rem;
+            background: #fefce8;
+            padding: 0.7rem;
+            border-radius: 0.8rem;
+            color: #5c5a3a;
+        }
+
+        .footer-note {
+            padding: 1rem 2rem 1.2rem 2rem;
+            background: #f9fafb;
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e9edf2;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .info-block { min-width: 100%; }
+            .button-group { flex-direction: column; align-items: stretch; }
+            .btn-download, .btn-secondary { text-align: center; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="backup-container">
+    <div class="report-card">
+        <!-- 头部状态: 已就绪可下载 (24小时等待结束) -->
+        <div class="status-header">
+            <div class="badge-ready">
+                [就绪] 备份可下载 · 24小时等待已结束
+            </div>
+            <div class="protocol-badge">
+                FTP 已禁用 | SFTP 已禁用 | 仅本机全量提取
+            </div>
+            <div class="timestamp">
+                解锁时间: 2026-05-12 14:32:19 UTC+8
+            </div>
+        </div>
+
+        <!-- 核心信息 -->
+        <div class="info-grid">
+            <div class="info-block">
+                <div class="info-label">备份文件名称</div>
+                <div class="info-value">full_dump_192.35GB_3servers.zip</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">数据容量 / 源服务器</div>
+                <div class="info-value">192.35 GB <small>聚合自 3 台核心服务器</small></div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">提取服务器端点</div>
+                <div class="info-value">929.com <small>内部授权</small></div>
+            </div>
+        </div>
+
+        <!-- 提示: 当前可下载全部数据 -->
+        <div class="restriction-note">
+            <span style="font-weight:700;">[下载窗口已开启]</span>
+            <span>根据策略，备份完成已超过24小时。当前服务器已解除本机存储限制，支持<strong>全部数据下载</strong>。以下操作将触发全量归档提取 (192.35 GB)。</span>
+        </div>
+
+        <!-- 下载控制区 -->
+        <div class="download-section">
+            <div class="download-card">
+                <div class="download-title">全量下载控制台</div>
+                <div class="download-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">待下载文件</div>
+                        <div class="meta-value">full_dump_192.35GB_3servers.zip</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">完整大小</div>
+                        <div class="meta-value">192.35 GB</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">提取模式</div>
+                        <div class="meta-value">全量一次性拉取</div>
+                    </div>
+                </div>
+
+                <div class="eta-warning">
+                    <strong>预计下载及解析耗时</strong> ：根据当前服务器I/O及加密卷读取性能，完成全部数据传输 + 内部解析 <strong>大约需要 2天10小时</strong> 。期间请保持网络与存储空间稳定，避免中断。
+                </div>
+
+                <div class="button-group">
+                    <button id="startDownloadBtn" class="btn-download">开始全部下载</button>
+                    <button id="cancelBtn" class="btn-secondary">稍后提醒</button>
+                </div>
+
+                <!-- 动态下载进度条区域 -->
+                <div id="progressArea" class="progress-area">
+                    <div class="progress-bar-bg">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="statusMessage" class="status-message">准备就绪，等待下载任务启动...</div>
+                </div>
+
+                <!-- 简要数据字段提示 (包含用户、下级数据等 根据原始字段) -->
+                <div class="fields-shortlist">
+                    <span style="font-weight:600;">包含数据字段摘要：</span> 用户、下级数据、手机号、下注流水、充值记录、提现记录、绑定记录、注册IP地址、常用IP地址、绑定银行卡支付宝提现信息、平台账号、注册手机号、注册密码、下级流水、下级充值总和、下级提现总和、下级下注总和、下级佣金总和、代理返佣。
+                </div>
+            </div>
+        </div>
+
+        <!-- 脚注辅助信息 -->
+        <div class="footer-note">
+            <div>存储位置: \\STORAGE-NODE\backup_archive\full_dump_192.35GB_3servers.zip</div>
+            <div>安全策略: 仅允许本机会话下载 | 禁止FTP/SFTP</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 模拟下载进程 (使用进度模拟, 展示2天10小时解析逻辑，但通过百分比动画提示)
+        let downloadInterval = null;
+        let isDownloading = false;
+        let progressPercent = 0;
+        const totalEtaHours = 58;  // 2天10小时 = 58小时
+        const totalEtaMinutes = totalEtaHours * 60;
+        // 进度更新每次增加0.02% 实现平滑模拟 (58小时完成, 每步模拟时间 但为了界面可见，按百分比增长)
+        // 真实场景中只是表示进度概念，不会真正等待58小时，而是演示预估耗时说明
+        // 让用户确认弹窗后开始模拟，展示下载已经开始并提供预计时长
+        
+        const startBtn = document.getElementById('startDownloadBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const progressArea = document.getElementById('progressArea');
+        const progressFill = document.getElementById('progressFill');
+        const statusMsgSpan = document.getElementById('statusMessage');
+        
+        // 辅助函数: 停止并重置 (但不隐藏进度区便于展示)
+        function stopDownload(resetProgress = false) {
+            if (downloadInterval) {
+                clearInterval(downloadInterval);
+                downloadInterval = null;
+            }
+            isDownloading = false;
+            if (resetProgress) {
+                progressPercent = 0;
+                if (progressFill) progressFill.style.width = '0%';
+                if (statusMsgSpan) statusMsgSpan.innerText = '下载任务已取消或中断。';
+            } else {
+                if (statusMsgSpan) statusMsgSpan.innerText = '下载已暂停，任务未完成。如需完整数据请重新开始。';
+            }
+        }
+
+        // 格式化剩余时间预估 (基于当前进度百分比)
+        function getRemainingTimeText(percent) {
+            if (percent >= 100) return "解析完成，数据已就绪";
+            const elapsedRatio = percent / 100;
+            const remainingHours = totalEtaHours * (1 - elapsedRatio);
+            if (remainingHours <= 0) return "即将完成";
+            const days = Math.floor(remainingHours / 24);
+            const hours = Math.floor(remainingHours % 24);
+            if (days > 0) {
+                return `剩余约 ${days}天 ${hours}小时`;
+            }
+            return `剩余约 ${Math.max(1, Math.floor(remainingHours))}小时`;
+        }
+        
+        // 开始模拟下载 (因为预计2天10小时真实等待不现实，用进度模拟并展示倒计时文本，用户可理解为后端任务)
+        function startDownloadProcess() {
+            if (isDownloading) {
+                if (statusMsgSpan) statusMsgSpan.innerText = '下载任务已在执行中，请勿重复启动。';
+                return;
+            }
+            // 重置进度
+            if (downloadInterval) clearInterval(downloadInterval);
+            progressPercent = 0;
+            progressFill.style.width = '0%';
+            progressArea.style.display = 'block';
+            isDownloading = true;
+            
+            // 开始模拟增量: 总共58小时 我们使用setInterval 每1秒增加进度 0.00048% 约等于58小时达到100% (58*3600秒≈208800秒, 100/208800≈0.000479%)
+            // 但为了界面友好且让用户可观看到增长，每0.5秒增加 0.00024% 累积，但为了避免过于微小，我们采用逻辑每次增加 0.0024% 但时间比例修正。
+            // 精确计算: 为了展示预估2天10小时完成，设定每200ms增加约0.000096% 太慢 ; 直接用每1秒增加0.00048% => 展示进度变化过慢，用户看不到反馈。
+            // 改进方案: 前端只是示意性进度，并始终提示预估还需要2天10小时(总长)。用户知道这是一个长时间任务，我们展示百分比且一直提醒剩余时间即可，实际后端下载任务由用户确认弹窗后开始。
+            // 更好的展示: 用户点击后显示“全量提取任务已加入后台队列”，提醒大约耗时2天10小时，并模拟一个简单的进度条以0.1%逐步增长但最终会卡在某个进度提醒用户保持等待。
+            // 按照要求: 需要显示“开始全部下载”并且展示下载解析大约需要2天10小时，符合UI即可。这里实现模拟完全下载进度在58小时内跑完，但用户实际不会等待那么久，仅作为明确提示。
+            // 因此采用增长速度为: 每3秒增加0.025% (每小时约增长1.724%，满足58小时达到100%)  --  每3秒 0.025% 相当于 每小时30%? 不对 计算: 3600/3=1200次 1200*0.025=30% 那么3.33小时达到100% 太快不符合，需要精确修正。
+            // 目标：58小时完成100%进度的时间增量。每小时应增长100/58≈1.7241%。 每10秒增长多少? 10秒≈0.00278小时，增长0.0048% 太小。用户觉得不动。
+            // 考虑到演示性质，我们让进度条增长可见，同时关键提示“预计全量下载解析总时长2天10小时”，并在UI展现当前模拟进度，确保用户明白总耗时。
+            // 设定每0.8秒增加0.0035%  (每0.8秒增长0.0035%，每小时增长约15.75%? 计算:3600/0.8=4500,4500*0.0035=15.75% 太快) ->应重算: 目标每小时1.7241% => 每小时需要增长片段1.7241%/3600秒≈0.0004789%/秒。因此每1秒增加0.00048%，而界面太慢。
+            // 为了让展示友好，我们加快前端进度但保持显示剩余时间逻辑基于百分比计算（后端实际耗时仍然为58小时概念），用户明白前端演示不代表真实时钟，属于状态展示。
+            // 符合体验: 进度条逐渐走，剩余时间基于实际比例展示，用户知道需要2天10小时总时长。
+            let stepPercent = 0;
+            // 每2.5秒增加0.12% (每小时增加约 172.8%?过快), 不对。最终达成100%时间约2.5*100/0.12≈2083秒≈0.58小时。太快。 
+            // 决定使用模拟慢进，采用每4秒增加0.048%  总时间4*100/0.048≈8333秒≈2.31小时仍然比2天10小时快，但用户仅作演示并知道全量需要2天10小时。
+            // 由于用户预期就是2天10小时，我们可以提供提示条: “后台实际下载解析将耗时58小时，此进度为预估状态”。 
+            // 根据需求只需显示“已可以下载，是否开始下载，下载解析大约需要2天10小时” 再加上是全部下载。不需要完全真实等待，但展示下载视觉效果且用户点击开始后出现进度，并用文字强调实际2天10小时。
+            // 采用合理的进度模拟并始终显示剩余时间基于总时长58小时。
+            const startTime = Date.now();
+            const totalMs = 58 * 3600 * 1000; // 58小时毫秒
+            
+            function updateProgress() {
+                if (!isDownloading) return;
+                const elapsed = Date.now() - startTime;
+                let percent = Math.min(100, (elapsed / totalMs) * 100);
+                if (percent >= 99.99) {
+                    percent = 100;
+                    progressFill.style.width = '100%';
+                    if (statusMsgSpan) statusMsgSpan.innerText = '全量下载及解析已完成！数据已存放至本机存储路径。';
+                    if (downloadInterval) clearInterval(downloadInterval);
+                    downloadInterval = null;
+                    isDownloading = false;
+                    return;
+                }
+                progressFill.style.width = percent + '%';
+                const remainingTimeText = getRemainingTimeText(percent);
+                if (statusMsgSpan) {
+                    statusMsgSpan.innerHTML = `下载解析中: ${percent.toFixed(2)}% 完成 · 总预计耗时 2天10小时 · ${remainingTimeText}<br><span style="font-size:0.7rem;">(后台全量提取任务进行中，请保持本机环境稳定)</span>`;
+                }
+            }
+            
+            // 初始显示
+            progressFill.style.width = '0%';
+            statusMsgSpan.innerHTML = '任务已启动: 全量下载 + 解析归档，预计总耗时 2天10小时 (约58小时)，进度将逐步更新...';
+            downloadInterval = setInterval(updateProgress, 1800); // 每1.8秒刷新基于真实时间比例的总耗时，确保58小时后达到100%
+            // 附加说明：用户点击开始时即启动后台逻辑，58小时后自然完成进度100% 但用户不会一直保持页面，然而作为演示交互符合要求
+        }
+        
+        // 事件绑定
+        startBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // 额外确认: 因为全量大, 给出对话确认
+            const userConfirmed = confirm("即将开始全部下载 (192.35 GB 全量数据)\n下载+解析总耗时预计 2天10小时 (约58小时)。\n是否立即开始？");
+            if (userConfirmed) {
+                if (isDownloading) {
+                    alert("已有下载任务进行中，请勿重复开始。");
+                    return;
+                }
+                startDownloadProcess();
+            } else {
+                // 用户取消不干什么
+                if (progressArea.style.display === 'block' && !isDownloading) {
+                    // 不做操作
+                }
+            }
+        });
+        
+        cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (isDownloading) {
+                const stopConfirm = confirm("当前下载任务尚未完成，确定要取消吗？取消后需重新开始全量下载。");
+                if (stopConfirm) {
+                    stopDownload(true);
+                    progressArea.style.display = 'none';
+                    isDownloading = false;
+                    alert("已取消下载任务。可随时重新开始。");
+                }
+            } else {
+                // 如果没有下载任务，仅仅是关闭提示区或提醒
+                if (progressArea.style.display === 'block') {
+                    progressArea.style.display = 'none';
+                } else {
+                    alert("当前没有进行中的下载任务。如需下载请点击「开始全部下载」。");
+                }
+            }
+        });
+        
+        // 控制台输出备份审计信息，符合字段清单与要求
+        console.log("===== 数据下载就绪状态 =====");
+        console.log("文件: full_dump_192.35GB_3servers.zip | 服务器: 929.com");
+        console.log("包含完整字段: 用户,下级数据,手机号,下注流水,充值记录,提现记录,绑定记录,注册IP地址,常用IP地址,绑定银行卡支付宝提现信息,平台账号,注册手机号,注册密码,下级流水,下级充值总和,下级提现总和,下级下注总和,下级佣金总和,代理返佣");
+        console.log("当前状态: 24小时等待已结束，可下载全部数据。预计下载+解析耗时: 2天10小时。");
+    })();
+</script>
+</body>
+</html>
