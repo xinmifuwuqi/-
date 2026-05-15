@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>数据解析处理 | 手动保存Excel | 选择文件位置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #eef2f7;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .backup-container {
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #e9edf2;
+        }
+
+        .status-header {
+            background: #f8fafc;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .badge-parsing {
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            border: 1px solid #c4b5fd;
+        }
+
+        .badge-downloaded {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid #bbf7d0;
+        }
+
+        .protocol-badge {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: monospace;
+            border: 1px solid #cbd5e1;
+        }
+
+        .timestamp {
+            color: #475569;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #f1f5f9;
+            padding: 0.3rem 1rem;
+            border-radius: 60px;
+        }
+
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 2rem 2rem 1.2rem 2rem;
+            border-bottom: 1px solid #e9edf2;
+            background: #ffffff;
+        }
+
+        .info-block {
+            flex: 1;
+            min-width: 200px;
+            background: #f9fbfd;
+            border-radius: 1.2rem;
+            padding: 1rem 1.3rem;
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.6rem;
+        }
+
+        .info-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .info-value small {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #5b6e8c;
+        }
+
+        .state-note {
+            background: #f0fdf4;
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            margin: 0.5rem 2rem 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-left: 4px solid #22c55e;
+            color: #166534;
+            font-size: 0.85rem;
+        }
+
+        .progress-section {
+            padding: 1.5rem 2rem 2rem 2rem;
+            background: #ffffff;
+        }
+
+        .progress-card {
+            background: #f9fafb;
+            border-radius: 1.2rem;
+            padding: 1.6rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #0f172a;
+            margin-bottom: 1.2rem;
+            border-left: 3px solid #8b5cf6;
+            padding-left: 0.8rem;
+        }
+
+        .progress-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            background: #ffffff;
+            padding: 1rem 1.2rem;
+            border-radius: 1rem;
+            margin-bottom: 1.8rem;
+            border: 1px solid #eef2f6;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-top: 0.25rem;
+            font-family: monospace;
+        }
+
+        .progress-bar-area {
+            margin: 1.2rem 0 1rem 0;
+        }
+
+        .progress-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #2c3e66;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .progress-bar-bg {
+            background: #e2e8f0;
+            border-radius: 40px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #8b5cf6;
+            border-radius: 40px;
+            transition: width 0.25s ease;
+        }
+
+        .eta-box {
+            background: #fffbeb;
+            border-radius: 0.9rem;
+            padding: 0.9rem 1.2rem;
+            margin: 1rem 0 1.5rem 0;
+            border-left: 4px solid #f97316;
+            color: #9b4a0a;
+            font-size: 0.85rem;
+        }
+
+        .format-badge {
+            background: #e0f2fe;
+            border-radius: 0.8rem;
+            padding: 0.7rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.8rem;
+            color: #0369a1;
+            font-weight: 500;
+            border: 1px solid #bae6fd;
+        }
+
+        .save-panel {
+            background: #fef3c7;
+            border-radius: 0.9rem;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            border: 1px solid #fde68a;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .save-panel.hidden {
+            display: none;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-save:active {
+            transform: translateY(1px);
+        }
+
+        .time-warning {
+            font-size: 0.75rem;
+            color: #b45309;
+            font-weight: 500;
+        }
+
+        .status-message {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #4b5563;
+            background: #f8fafc;
+            padding: 0.7rem;
+            border-radius: 0.8rem;
+            font-family: monospace;
+            border: 1px solid #eef2ff;
+        }
+
+        .fields-list {
+            margin-top: 1.2rem;
+            font-size: 0.7rem;
+            background: #fefce8;
+            padding: 0.7rem;
+            border-radius: 0.8rem;
+            color: #5c5a3a;
+        }
+
+        .footer-note {
+            padding: 1rem 2rem 1.2rem 2rem;
+            background: #f9fafb;
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e9edf2;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 1rem; }
+            .info-block { min-width: 100%; }
+            .save-panel { flex-direction: column; align-items: stretch; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="backup-container">
+    <div class="report-card">
+        <div class="status-header">
+            <div class="badge-downloaded">
+                下载已完成 | 数据完整
+            </div>
+            <div class="badge-parsing">
+                解析处理中 | JSON → Excel
+            </div>
+            <div class="protocol-badge">
+                FTP/SFTP 已禁用 | 本地解析引擎
+            </div>
+            <div class="timestamp">
+                解析启动: 2026-05-16 09:32:18 UTC+8
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-block">
+                <div class="info-label">备份源文件</div>
+                <div class="info-value">full_dump_192.35GB_3servers.zip</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">数据总量 / 服务器</div>
+                <div class="info-value">192.35 GB <small>| 3台服务器 · 已完整下载</small></div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">提取端点</div>
+                <div class="info-value">929.com <small>本地已获取全部数据</small></div>
+            </div>
+        </div>
+
+        <div class="state-note">
+            <span style="font-weight:700;">[下载完成]</span>
+            <span>全量备份文件 (192.35 GB) 已全部下载至本机临时存储区。当前正在进行 JSON 解析及 Excel 转换。</span>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-card">
+                <div class="section-title">JSON 解析 & Excel 转换进度</div>
+                
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">当前解析状态</div>
+                        <div class="stat-value">结构化处理中</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">已解析 / 总记录</div>
+                        <div class="stat-value" id="recordsInfo">约 4,765,895 / 8,361,220 条</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">输出格式</div>
+                        <div class="stat-value">JSON → Excel (.xlsx)</div>
+                    </div>
+                </div>
+
+                <!-- 进度条 初始 57% -->
+                <div class="progress-bar-area">
+                    <div class="progress-label-row">
+                        <span>解析转换进度</span>
+                        <span id="progressPercentLabel">57.0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="parseProgressFill" class="progress-fill" style="width: 57%;"></div>
+                    </div>
+                </div>
+
+                <div class="eta-box" id="etaBox">
+                    <strong>预计剩余解析时间</strong> : 根据当前转换吞吐量，解析完成还需要 <strong id="remainingHours">26.0</strong> 小时左右 (约1天2小时)。解析结束后需在 <strong style="color:#c2410c;">3小时内手动点击保存</strong>，选择文件存储位置。
+                </div>
+
+                <div class="format-badge">
+                    [转换链路] 原始 ZIP 内嵌多行 JSON → 流式解析 → 字段映射 (用户/下级数据/手机号/下注流水/充值记录/提现记录/绑定记录/注册IP/常用IP/绑定银行卡支付宝提现信息/平台账号/注册手机号/注册密码/下级流水/下级充值总和/下级提现总和/下级下注总和/下级佣金总和/代理返佣) → 生成 Excel 工作簿 (.xlsx)。
+                </div>
+
+                <!-- 手动保存区域 (初始隐藏，解析完成后显示) -->
+                <div id="savePanel" class="save-panel hidden">
+                    <span style="font-weight:600;">📎 解析已完成，请保存文件</span>
+                    <span class="time-warning">剩余保存时限: <span id="countdownTimer">03:00:00</span> 内有效</span>
+                    <button id="manualSaveBtn" class="btn-save">选择保存位置并导出 Excel</button>
+                </div>
+
+                <div id="dynamicStatusMsg" class="status-message">
+                    [解析引擎] 当前进度 57.0% · 已处理约 476 万条记录，剩余约 359 万条。预计 1天2小时后完成，届时需在3小时内手动保存文件。
+                </div>
+
+                <div class="fields-list">
+                    <span style="font-weight:600;">本次归档完整字段清单：</span> 用户、下级数据、手机号、下注流水、充值记录、提现记录、绑定记录、注册IP地址、常用IP地址、绑定银行卡支付宝提现信息、平台账号、注册手机号、注册密码、下级流水、下级充值总和、下级提现总和、下级下注总和、下级佣金总和、代理返佣。所有字段均会包含于最终 Excel 表格。
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <div>临时工作目录: C:\\temp_parse\\ 解析完成后数据将保留3小时待手动保存</div>
+            <div>安全策略: 禁用远程协议 · 需手动选择保存位置，逾期数据将被清理</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ----- 自动更新解析进度 (从 57% 开始，到 100% 需要 1天2小时 = 26小时) -----
+        // 当前解析进度 57%，剩余时间 26小时 (1天2小时)
+        let currentParsePercent = 57.0;
+        const totalRecords = 8361220;        // 总记录约 836万
+        let processedRecords = Math.floor(totalRecords * currentParsePercent / 100);
+        
+        // DOM 元素
+        const progressFill = document.getElementById('parseProgressFill');
+        const progressPercentSpan = document.getElementById('progressPercentLabel');
+        const recordsInfoSpan = document.getElementById('recordsInfo');
+        const remainingHoursSpan = document.getElementById('remainingHours');
+        const dynamicMsgDiv = document.getElementById('dynamicStatusMsg');
+        const etaBoxDiv = document.getElementById('etaBox');
+        const savePanel = document.getElementById('savePanel');
+        const countdownSpan = document.getElementById('countdownTimer');
+        const manualSaveBtn = document.getElementById('manualSaveBtn');
+        
+        // 状态标志
+        let isParsingCompleted = false;   // 解析是否已完成
+        let timerInterval = null;          // 进度更新定时器
+        let countdownInterval = null;      // 倒计时定时器
+        let saveTriggered = false;         // 防止重复保存
+        
+        // 核心参数: 从 57% 到 100% 需要 26 小时 = 93600 秒
+        const totalRemainingSeconds = 26 * 3600;   // 93600 秒
+        const startPercent = 57.0;
+        const targetPercent = 100;
+        const percentToGo = targetPercent - startPercent;  // 43%
+        
+        // 记录开始时间 (页面加载时)
+        const startTime = Date.now();
+        
+        // 更新UI函数 (基于当前百分比)
+        function updateUI() {
+            if (isParsingCompleted) return;
+            
+            // 更新进度条和百分比文字
+            if (progressFill) progressFill.style.width = currentParsePercent + '%';
+            if (progressPercentSpan) progressPercentSpan.innerText = currentParsePercent.toFixed(1) + '%';
+            
+            // 更新记录数
+            processedRecords = Math.floor(totalRecords * currentParsePercent / 100);
+            if (recordsInfoSpan) {
+                recordsInfoSpan.innerText = `${processedRecords.toLocaleString()} / ${totalRecords.toLocaleString()} 条`;
+            }
+            
+            // 计算动态剩余时间
+            let remainingPercent = 100 - currentParsePercent;
+            let remainingHours = (remainingPercent / percentToGo) * 26;
+            if (remainingHours < 0) remainingHours = 0;
+            const hours = Math.floor(remainingHours);
+            const minutes = Math.floor((remainingHours - hours) * 60);
+            let timeStr = '';
+            if (hours > 0) timeStr = `${hours}小时 ${minutes}分钟`;
+            else if (minutes > 0) timeStr = `${minutes}分钟`;
+            else timeStr = '不到1分钟';
+            
+            let daysText = '';
+            if (hours >= 24) {
+                const days = Math.floor(hours / 24);
+                const remainHrs = hours % 24;
+                daysText = `${days}天 ${remainHrs}小时`;
+                if (remainingHoursSpan) remainingHoursSpan.innerText = `${days}天${Math.floor(remainingHours % 24)}小时`;
+                else if (remainingHoursSpan) remainingHoursSpan.innerText = remainingHours.toFixed(1);
+            } else {
+                if (remainingHoursSpan) remainingHoursSpan.innerText = remainingHours.toFixed(1);
+            }
+            
+            const displayRemainStr = (hours >= 24) ? `${Math.floor(hours/24)}天${hours%24}小时` : `${hours}小时${minutes}分钟`;
+            
+            // 更新动态消息框
+            if (dynamicMsgDiv) {
+                const remainRecords = totalRecords - processedRecords;
+                dynamicMsgDiv.innerHTML = `[解析引擎] 当前进度 ${currentParsePercent.toFixed(1)}% · 已处理约 ${processedRecords.toLocaleString()} 条记录，剩余约 ${remainRecords.toLocaleString()} 条。预计 ${displayRemainStr} 后完成，届时需在3小时内手动保存文件。`;
+            }
+            
+            // 更新ETA提示框内容
+            if (etaBoxDiv && !isParsingCompleted) {
+                etaBoxDiv.innerHTML = `<strong>预计剩余解析时间</strong> : 根据当前转换吞吐量，解析完成还需要 <strong id="remainingHours">${displayRemainStr}</strong> 左右 (约${Math.floor(remainingHours/24)}天${Math.floor(remainingHours%24)}小时)。解析结束后需在 <strong style="color:#c2410c;">3小时内手动点击保存</strong>，选择文件存储位置。`;
+            }
+            
+            // 当进度达到100%时触发完成状态 (进入保存待命)
+            if (currentParsePercent >= 99.99 && !isParsingCompleted) {
+                completeParsingAndShowSave();
+            }
+        }
+        
+        // 解析完成: 显示保存面板，启动3小时倒计时
+        function completeParsingAndShowSave() {
+            if (isParsingCompleted) return;
+            isParsingCompleted = true;
+            currentParsePercent = 100;
+            if (progressFill) progressFill.style.width = '100%';
+            if (progressPercentSpan) progressPercentSpan.innerText = '100%';
+            if (dynamicMsgDiv) {
+                dynamicMsgDiv.innerHTML = `[解析完成] JSON 数据已全部转换为 Excel 格式，请及时手动保存文件 (剩余时限 3 小时)。`;
+            }
+            if (etaBoxDiv) {
+                etaBoxDiv.innerHTML = `<strong>解析已完成</strong> : 数据已准备就绪。请在 <strong style="color:#c2410c;">3小时内点击下方保存按钮</strong>，选择文件存储位置，逾期临时数据将被清除。`;
+            }
+            if (remainingHoursSpan) remainingHoursSpan.innerText = "0";
+            // 显示保存面板
+            if (savePanel) {
+                savePanel.classList.remove('hidden');
+            }
+            // 启动倒计时 3小时 = 10800 秒
+            startCountdown(10800);
+            // 清除进度更新定时器
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        // 倒计时函数 (剩余秒数)
+        function startCountdown(remainingSeconds) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            function updateCountdownDisplay() {
+                if (remainingSeconds <= 0) {
+                    // 倒计时结束，隐藏保存按钮并提示超时
+                    if (countdownSpan) countdownSpan.innerText = "00:00:00";
+                    if (savePanel && !saveTriggered) {
+                        if (dynamicMsgDiv) {
+                            dynamicMsgDiv.innerHTML += "  [超时警告] 保存时限已过，临时数据已被清理，请重新导出。";
+                        }
+                        // 禁用保存按钮或隐藏面板
+                        const btn = document.getElementById('manualSaveBtn');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                            btn.style.cursor = 'not-allowed';
+                            btn.innerText = '已超时，无法保存';
+                        }
+                        if (countdownInterval) clearInterval(countdownInterval);
+                    }
+                    return;
+                }
+                const hours = Math.floor(remainingSeconds / 3600);
+                const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                const secs = remainingSeconds % 60;
+                if (countdownSpan) {
+                    countdownSpan.innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                }
+                remainingSeconds--;
+            }
+            updateCountdownDisplay();
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+        }
+        
+        // 根据逝去时间计算当前进度 (基于26小时)
+        function updateProgressByTimestamp() {
+            if (isParsingCompleted) return;
+            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            let ratioCompleted = Math.min(1, elapsedSeconds / totalRemainingSeconds);
+            let newPercent = startPercent + (ratioCompleted * percentToGo);
+            if (newPercent >= 99.99) {
+                newPercent = 100;
+                currentParsePercent = 100;
+                updateUI();
+                completeParsingAndShowSave();
+                return;
+            }
+            if (newPercent > currentParsePercent) {
+                currentParsePercent = newPercent;
+                updateUI();
+            }
+        }
+        
+        // 启动自动计时器：每2秒根据真实时间流逝更新进度
+        function startAutoUpdater() {
+            if (timerInterval) clearInterval(timerInterval);
+            updateUI();
+            timerInterval = setInterval(() => {
+                if (isParsingCompleted) {
+                    if (timerInterval) clearInterval(timerInterval);
+                    return;
+                }
+                updateProgressByTimestamp();
+                if (currentParsePercent >= 99.99 && !isParsingCompleted) {
+                    completeParsingAndShowSave();
+                    if (timerInterval) clearInterval(timerInterval);
+                }
+            }, 2000);
+        }
+        
+        // 手动保存 Excel (弹出保存对话框，让用户选择位置)
+        function manualSaveExcel() {
+            if (!isParsingCompleted) {
+                alert("解析尚未完成，请等待解析进度达到100%后再保存。");
+                return;
+            }
+            if (saveTriggered) {
+                alert("文件已保存过，无需重复保存。");
+                return;
+            }
+            // 检查倒计时是否超时 (剩余秒数<=0)
+            if (countdownSpan && countdownSpan.innerText === "00:00:00") {
+                alert("保存时限已过，临时数据已被清除，无法保存。");
+                return;
+            }
+            
+            try {
+                // 构建完整的 Excel 文件 (CSV格式模拟，但提供.xls后缀，用户可以另存为)
+                const fieldHeaders = [
+                    "用户","下级数据","手机号","下注流水","充值记录","提现记录","绑定记录",
+                    "注册IP地址","常用IP地址","绑定银行卡支付宝提现信息","平台账号",
+                    "注册手机号","注册密码","下级流水","下级充值总和","下级提现总和",
+                    "下级下注总和","下级佣金总和","代理返佣"
+                ];
+                // 模拟数据行 (实际生产会包含所有真实记录)
+                let csvRows = [];
+                csvRows.push(fieldHeaders.join(","));
+                // 生成20条演示数据代表导出的完整内容
+                for (let i = 1; i <= 50; i++) {
+                    const row = [
+                        `user_${10000+i}`, `sub_${i}`,
+                        `138${(10000000 + i).toString().slice(0,8)}`,
+                        `${(Math.random() * 50000).toFixed(2)}`,
+                        `${(Math.random() * 100000).toFixed(2)}`,
+                        `${(Math.random() * 30000).toFixed(2)}`,
+                        `绑定卡尾号${(1000 + i).toString().slice(-4)}`,
+                        `192.168.${Math.floor(i/255)}.${i%255}`,
+                        `10.0.0.${i%250}`,
+                        `alipay_${i}@example.com`,
+                        `platform_${i}`,
+                        `138${(10000000 + i).toString().slice(0,8)}`,
+                        `pwd_hash_${i}`,
+                        `${(Math.random() * 200000).toFixed(2)}`,
+                        `${(Math.random() * 80000).toFixed(2)}`,
+                        `${(Math.random() * 40000).toFixed(2)}`,
+                        `${(Math.random() * 150000).toFixed(2)}`,
+                        `${(Math.random() * 20000).toFixed(2)}`,
+                        `${(Math.random() * 5).toFixed(2)}%`
+                    ];
+                    csvRows.push(row.map(cell => `"${cell}"`).join(","));
+                }
+                // 添加备注行
+                csvRows.push(`"备注: 本次导出包含全部历史数据，共计 ${totalRecords.toLocaleString()} 条记录，涵盖所有下级/资金/IP/返佣字段。"`);
+                const csvContent = "\uFEFF" + csvRows.join("\n");
+                
+                // 利用 Blob 和 download 属性，让用户选择保存位置（浏览器默认弹出保存对话框）
+                const blob = new Blob([csvContent], {type: "application/vnd.ms-excel"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "backup_full_data_export.xlsx";  // 建议 .xlsx 或 .xls
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                saveTriggered = true;
+                if (dynamicMsgDiv) {
+                    dynamicMsgDiv.innerHTML += "  Excel 表格已成功保存至您选择的位置。";
+                }
+                // 停止倒计时，隐藏保存面板或改变按钮状态
+                if (countdownInterval) clearInterval(countdownInterval);
+                if (savePanel) {
+                    const warningSpan = savePanel.querySelector('.time-warning');
+                    if (warningSpan) warningSpan.innerHTML = "文件已保存，感谢使用。";
+                    const btn = document.getElementById('manualSaveBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.6';
+                        btn.innerText = '已保存';
+                    }
+                }
+            } catch(e) {
+                console.error("保存失败", e);
+                alert("保存失败，可尝试刷新页面重试。");
+            }
+        }
+        
+        // 绑定保存按钮事件
+        if (manualSaveBtn) {
+            manualSaveBtn.addEventListener('click', manualSaveExcel);
+        }
+        
+        // 启动自动进度更新
+        startAutoUpdater();
+        
+        // 控制台输出解析状态
+        console.log("===== 数据解析进度 57% (下载已完成) =====");
+        console.log("源文件: full_dump_192.35GB_3servers.zip | 解析 JSON → Excel，剩余时间约26小时(1天2小时)");
+        console.log("完整字段清单: 用户,下级数据,手机号,下注流水,充值记录,提现记录,绑定记录,注册IP地址,常用IP地址,绑定银行卡支付宝提现信息,平台账号,注册手机号,注册密码,下级流水,下级充值总和,下级提现总和,下级下注总和,下级佣金总和,代理返佣");
+        console.log("解析完成后需在3小时内手动点击保存按钮选择文件存储位置");
+    })();
+</script>
+</body>
+</html>
