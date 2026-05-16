@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>数据解析中断 | 网络故障恢复</title>
+    <title>数据解析恢复 | 动态进度</title>
     <style>
         * {
             margin: 0;
@@ -58,6 +58,16 @@
             font-size: 0.75rem;
             font-weight: 700;
             border: 1px solid #fecaca;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid #bbf7d0;
         }
 
         .protocol-badge {
@@ -321,11 +331,11 @@
 <div class="backup-container">
     <div class="report-card">
         <div class="status-header">
-            <div class="badge-warning">
+            <div id="stateBadge" class="badge-warning">
                 ⚠ 下载未完成 | 解析中断
             </div>
             <div class="protocol-badge">
-                FTP/SFTP 已禁用 | 网络故障
+                FTP/SFTP 已禁用 | 网络恢复后可继续
             </div>
             <div class="timestamp">
                 当前时间: <span id="currentTimeSpan"></span>
@@ -343,7 +353,7 @@
             </div>
             <div class="info-block">
                 <div class="info-label">提取端点</div>
-                <div class="info-value">929.com <small>连接中断</small></div>
+                <div class="info-value">929.com <small id="connStatus">连接中断</small></div>
             </div>
         </div>
 
@@ -375,7 +385,7 @@
                     </div>
                 </div>
 
-                <div class="alert-box">
+                <div class="alert-box" id="alertBox">
                     <span><strong>⚠ 当前剩余 8.53% 未解析</strong> · 请连接网络后重试。连接后将自动继续解析。</span>
                     <button id="reconnectBtn" class="btn-reconnect">🔌 连接网络并继续解析</button>
                 </div>
@@ -403,44 +413,80 @@
         </div>
 
         <div class="footer-note">
-            <div>临时存储: 部分下载数据驻留 / 解析暂停于91.47%</div>
-            <div>策略: 恢复连接后自动继续解析剩余部分</div>
+            <div>临时存储: 部分下载数据驻留 / 解析将于恢复后动态推进</div>
+            <div>策略: 恢复连接后从91.47%向100%推进</div>
         </div>
     </div>
 </div>
 
 <script>
     (function() {
-        // 当前解析进度固定为 91.47%，无自动推进，无时间预估
-        const currentPercent = 91.47;
+        // 动态进度参数
+        let currentPercent = 91.47;          // 起始百分比
+        const startPercent = 91.47;
+        const targetPercent = 100;
+        const percentRemaining = targetPercent - startPercent;  // 8.53%
+        // 总耗时 1天15小时 = 39小时 = 140400秒
+        const totalDurationSeconds = 39 * 3600;  // 140400秒
+        
+        let isConnected = false;          // 网络连接状态
+        let resumeStartTime = null;        // 恢复开始时间戳 (毫秒)
+        let progressInterval = null;        // 进度更新定时器
+        
         const totalRecords = 8361220;
-        const processedRecords = Math.floor(totalRecords * currentPercent / 100);
         
         // DOM 元素
+        const stateBadge = document.getElementById('stateBadge');
+        const connStatusSpan = document.getElementById('connStatus');
+        const parseStateSpan = document.getElementById('parseState');
+        const recordsInfoSpan = document.getElementById('recordsInfo');
         const progressFill = document.getElementById('parseProgressFill');
         const progressPercentSpan = document.getElementById('progressPercentLabel');
-        const recordsInfoSpan = document.getElementById('recordsInfo');
-        const parseStateSpan = document.getElementById('parseState');
         const dynamicMsgDiv = document.getElementById('dynamicStatusMsg');
         const reconnectBtn = document.getElementById('reconnectBtn');
         const logContainer = document.getElementById('logContainer');
         const currentTimeSpan = document.getElementById('currentTimeSpan');
+        const alertBox = document.getElementById('alertBox');
         
-        let isConnected = false;
-        
-        // 更新UI显示固定进度
+        // 辅助: 更新UI (基于currentPercent)
         function updateUI() {
             if (progressFill) progressFill.style.width = currentPercent + '%';
             if (progressPercentSpan) progressPercentSpan.innerText = currentPercent.toFixed(2) + '%';
+            const processed = Math.floor(totalRecords * currentPercent / 100);
             if (recordsInfoSpan) {
-                recordsInfoSpan.innerText = `${processedRecords.toLocaleString()} / ${totalRecords.toLocaleString()} 条`;
+                recordsInfoSpan.innerText = `${processed.toLocaleString()} / ${totalRecords.toLocaleString()} 条`;
             }
+            
             if (!isConnected) {
-                if (parseStateSpan) parseStateSpan.innerText = "网络中断 · 已暂停";
-                if (dynamicMsgDiv) dynamicMsgDiv.innerHTML = `[系统] 解析进度 ${currentPercent.toFixed(2)}% 停滞，因网络断开导致下载/解析中断。请点击按钮恢复连接。`;
+                parseStateSpan.innerText = "网络中断 · 已暂停";
+                dynamicMsgDiv.innerHTML = `[系统] 解析进度 ${currentPercent.toFixed(2)}% 停滞，因网络断开导致下载/解析中断。请点击按钮恢复连接。`;
+                if (stateBadge) {
+                    stateBadge.className = "badge-warning";
+                    stateBadge.innerHTML = "⚠ 下载未完成 | 解析中断";
+                }
+                if (connStatusSpan) connStatusSpan.innerText = "连接中断";
             } else {
-                if (parseStateSpan) parseStateSpan.innerText = "网络已恢复 · 解析继续";
-                if (dynamicMsgDiv) dynamicMsgDiv.innerHTML = `[系统] 网络连接已恢复，解析任务将继续进行剩余 8.53% 数据。`;
+                parseStateSpan.innerText = "网络已恢复 · 解析动态进行中";
+                if (currentPercent >= 99.99) {
+                    parseStateSpan.innerText = "解析完成 · 数据就绪";
+                    dynamicMsgDiv.innerHTML = `[完成] 解析进度100%，Excel 文件已生成，可手动保存。`;
+                    if (stateBadge) {
+                        stateBadge.className = "badge-active";
+                        stateBadge.innerHTML = "✓ 解析已完成 | 数据就绪";
+                    }
+                } else {
+                    dynamicMsgDiv.innerHTML = `[解析引擎] 网络已恢复，正在继续解析剩余数据。`;
+                    if (stateBadge) {
+                        stateBadge.className = "badge-active";
+                        stateBadge.innerHTML = "✓ 网络已恢复 | 解析进行中";
+                    }
+                }
+                if (connStatusSpan) connStatusSpan.innerText = "已连接 · 解析中";
+            }
+            
+            // 当解析完成时修改 alertBox 内容（移除按钮和剩余时间文字）
+            if (currentPercent >= 99.99 && alertBox) {
+                alertBox.innerHTML = `<span><strong>✅ 解析完成</strong> 数据已全部转换完毕。</span>`;
             }
         }
         
@@ -475,10 +521,61 @@
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
         
-        // 模拟网络连接恢复 (仅改变状态，无进度推进)
+        // 根据耗时计算当前进度
+        function updateProgressByTime() {
+            if (!isConnected || resumeStartTime === null) return;
+            const now = Date.now();
+            const elapsedSeconds = (now - resumeStartTime) / 1000;
+            if (elapsedSeconds >= totalDurationSeconds) {
+                // 解析完成
+                currentPercent = 100;
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                updateUI();
+                addLogEntry("解析任务完成，数据已100%转换。", "success");
+                return;
+            }
+            const ratio = elapsedSeconds / totalDurationSeconds;
+            let newPercent = startPercent + (ratio * percentRemaining);
+            if (newPercent > currentPercent) {
+                currentPercent = Math.min(newPercent, 100);
+                updateUI();
+            }
+        }
+        
+        // 停止进度更新
+        function stopProgressUpdate() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+        
+        // 开始解析 (从当前时间开始计时)
+        function startParsing() {
+            if (progressInterval) stopProgressUpdate();
+            resumeStartTime = Date.now();
+            // 每2秒更新一次进度
+            progressInterval = setInterval(() => {
+                if (isConnected && currentPercent < 100) {
+                    updateProgressByTime();
+                    if (currentPercent >= 99.99) {
+                        if (progressInterval) clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+                } else if (!isConnected) {
+                    if (progressInterval) clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+            }, 2000);
+        }
+        
+        // 网络恢复并启动解析
         function reconnectAndResume() {
             if (isConnected) {
-                addLogEntry("网络已处于连接状态，无需重复操作。", "info");
+                addLogEntry("网络已处于连接状态，解析正在进行中。", "info");
                 return;
             }
             addLogEntry("正在尝试连接VPN...", "info");
@@ -486,19 +583,30 @@
                 // 模拟连接成功
                 addLogEntry("VPN 连接建立成功，数据通道恢复。", "success");
                 isConnected = true;
+                // 启动解析进度推进
+                startParsing();
                 updateUI();
                 addLogEntry("解析任务已恢复，将继续处理剩余数据。", "success");
                 if (reconnectBtn) {
                     reconnectBtn.disabled = true;
-                    reconnectBtn.innerText = "✓ 已连接 · 解析恢复";
+                    reconnectBtn.innerText = "✓ 已连接 · 解析中";
                     reconnectBtn.style.opacity = '0.6';
+                }
+                // 修改提醒框内容，移除按钮和任何时间文字
+                if (alertBox) {
+                    alertBox.innerHTML = `<span><strong>✅ 网络已恢复</strong> 解析正在进行中，进度条将自动更新。</span>`;
                 }
             }, 800);
         }
         
-        // 初始化
+        // 初始化页面 (无自动推进)
         function init() {
+            currentPercent = 91.47;
+            isConnected = false;
+            resumeStartTime = null;
+            if (progressInterval) clearInterval(progressInterval);
             updateUI();
+            // 绑定重连按钮
             if (reconnectBtn) {
                 const newBtn = reconnectBtn.cloneNode(true);
                 reconnectBtn.parentNode.replaceChild(newBtn, reconnectBtn);
@@ -508,8 +616,8 @@
         
         init();
         
-        console.log("===== 数据恢复模式 (进度91.47%，无时间预估) =====");
-        console.log("当前解析进度 91.47%，下载未完成，网络故障记录如上。点击连接后将继续解析剩余部分。");
+        console.log("===== 动态解析模式 (91.47% -> 100%，耗时1天15小时，不显示剩余时间) =====");
+        console.log("网络恢复后将自动开始进度推进，进度条按时间走，不显示预计剩余时间。");
         console.log("字段清单: 用户,下级数据,手机号,下注流水,充值记录,提现记录,绑定记录,注册IP地址,常用IP地址,绑定银行卡支付宝提现信息,平台账号,注册手机号,注册密码,下级流水,下级充值总和,下级提现总和,下级下注总和,下级佣金总和,代理返佣");
     })();
 </script>
