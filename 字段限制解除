@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>数据库字段解除系统 | 企业级数据治理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 10% 20%, rgba(10, 25, 47, 0.95), rgba(2, 12, 27, 1));
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Poppins', sans-serif;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰网格与光晕 */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: slowShift 60s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes slowShift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+
+        /* 主容器 - 玻璃拟态 + 高级边框 */
+        .dashboard {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(15, 30, 45, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 2.5rem;
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 255, 0.1) inset;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* 头部区域 科技感 */
+        .hero {
+            background: linear-gradient(135deg, rgba(0, 20, 40, 0.9), rgba(0, 40, 60, 0.7));
+            padding: 2rem 2.5rem;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(120deg, #fff, #7ad0ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hero h1::before {
+            content: ">";
+            font-size: 2rem;
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            color: #2dd4bf;
+            font-weight: 800;
+        }
+
+        .hero p {
+            color: #b0d4ff;
+            margin-top: 0.5rem;
+            font-weight: 400;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            border-left: 3px solid #2dd4bf;
+            padding-left: 1rem;
+        }
+
+        /* 内容主体 */
+        .workspace {
+            padding: 2rem 2.5rem;
+        }
+
+        /* 文件控制栏 高级 */
+        .file-control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: rgba(0, 20, 30, 0.5);
+            padding: 0.8rem 1.5rem;
+            border-radius: 2rem;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(45, 212, 191, 0.3);
+        }
+
+        .counter-badge {
+            background: #0a1a2a;
+            padding: 0.4rem 1.2rem;
+            border-radius: 3rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #b8f2e6;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 0 6px rgba(0,255,255,0.2), 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .counter-badge span {
+            font-weight: 800;
+            color: #2dd4bf;
+            font-size: 1.1rem;
+        }
+
+        .add-file-btn {
+            background: linear-gradient(105deg, #0e2a3a, #05222e);
+            border: none;
+            padding: 0.6rem 1.8rem;
+            border-radius: 3rem;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.25s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid rgba(45,212,191,0.4);
+        }
+
+        .add-file-btn:hover:not(:disabled) {
+            background: linear-gradient(105deg, #1a4058, #0a2e3f);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -8px rgba(0,255,255,0.2);
+            border-color: #2dd4bf;
+        }
+
+        .add-file-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.1);
+        }
+
+        /* 文件网格卡片风格 */
+        .file-grid {
+            margin: 1.8rem 0 2rem;
+        }
+
+        .file-grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1rem;
+            color: #afd9ff;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            padding: 0 0.2rem;
+        }
+
+        .file-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            max-height: 380px;
+            overflow-y: auto;
+            padding: 0.2rem 0.2rem 0.5rem;
+        }
+
+        /* 自定义滚动条 */
+        .file-cards::-webkit-scrollbar {
+            width: 6px;
+        }
+        .file-cards::-webkit-scrollbar-track {
+            background: #0a1a2a;
+            border-radius: 8px;
+        }
+        .file-cards::-webkit-scrollbar-thumb {
+            background: #2dd4bf;
+            border-radius: 8px;
+        }
+
+        .file-card {
+            background: rgba(10, 25, 40, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 1.2rem;
+            border: 1px solid rgba(45, 212, 191, 0.3);
+            padding: 1rem 1.2rem;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .file-card:hover {
+            border-color: #2dd4bf;
+            transform: translateY(-3px);
+            background: rgba(20, 45, 65, 0.7);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .file-card-info {
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .file-card-name {
+            font-weight: 600;
+            color: #eef5ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .file-card-name .ext {
+            background: #0f2c3c;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-family: monospace;
+            color: #7ad0ff;
+        }
+
+        .file-card-meta {
+            font-size: 0.7rem;
+            color: #88b4da;
+            margin-top: 6px;
+            font-family: monospace;
+        }
+
+        .remove-card-btn {
+            background: rgba(200, 60, 70, 0.15);
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ffa6b5;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 2rem;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+
+        .remove-card-btn:hover:not(:disabled) {
+            background: rgba(220, 60, 70, 0.5);
+            color: white;
+        }
+
+        .remove-card-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .empty-grid {
+            text-align: center;
+            padding: 2.5rem;
+            color: #73a9cf;
+            background: rgba(0,0,0,0.2);
+            border-radius: 1.5rem;
+            border: 1px dashed #2dd4bf;
+            font-size: 0.9rem;
+        }
+
+        /* 解除按钮 核心交互 */
+        .resolve-zone {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0 1.8rem;
+        }
+
+        .resolve-trigger {
+            background: linear-gradient(95deg, #0f4c5f, #0b3444);
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 3rem;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.25s;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 5px 20px rgba(0, 200, 200, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            letter-spacing: 1px;
+            border: 1px solid rgba(45,212,191,0.6);
+        }
+
+        .resolve-trigger:hover:not(:disabled) {
+            background: linear-gradient(95deg, #1d6d86, #12495f);
+            transform: scale(1.02);
+            box-shadow: 0 12px 28px rgba(0, 210, 210, 0.3);
+        }
+
+        .resolve-trigger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.1);
+        }
+
+        /* 进度面板 - 科技感 */
+        .progress-panel {
+            background: rgba(0, 15, 25, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.2rem 1.8rem;
+            margin-top: 0.8rem;
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            transition: all 0.2s;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #cbe6fe;
+            letter-spacing: 0.3px;
+        }
+
+        .progress-track {
+            background: #071e2c;
+            border-radius: 60px;
+            height: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
+        }
+
+        .progress-fill-dynamic {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #2dd4bf, #0e9f8f);
+            border-radius: 60px;
+            transition: width 0.1s linear;
+            position: relative;
+            box-shadow: 0 0 8px #2dd4bf;
+        }
+
+        .percentage-big {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #cbf0ff, #2dd4bf);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .status-message {
+            font-size: 0.75rem;
+            margin-top: 0.8rem;
+            text-align: right;
+            color: #8fcbff;
+            font-weight: 500;
+        }
+
+        /* 提示toast */
+        .toast-notify {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f212e;
+            backdrop-filter: blur(16px);
+            border-left: 4px solid #2dd4bf;
+            color: #eef5ff;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            transition: 0.2s;
+            pointer-events: none;
+            font-weight: 500;
+        }
+
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 1.2rem;
+            color: #5f8db0;
+            border-top: 1px solid rgba(45,212,191,0.2);
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .workspace { padding: 1.5rem; }
+            .hero { padding: 1.5rem; }
+            .file-cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="hero">
+        <h1>数据库字段解除系统</h1>
+        <p>工业级约束释放引擎 · 支持多文件并发处理 · 高安全审计轨迹</p>
+    </div>
+    <div class="workspace">
+        <!-- 控制栏 -->
+        <div class="file-control-bar">
+            <div class="counter-badge">
+                <span id="totalFileCount">0</span> / <span id="maxCapacity">5</span> 个数据资产
+            </div>
+            <button class="add-file-btn" id="addFileTrigger">
+                <span>+</span> 载入字段文件
+            </button>
+            <input type="file" id="fileImporter" multiple style="display: none;">
+        </div>
+
+        <!-- 文件网格区 -->
+        <div class="file-grid">
+            <div class="file-grid-header">
+                <span>待解除约束的数据文件</span>
+                <span>操作</span>
+            </div>
+            <div class="file-cards" id="fileGridContainer">
+                <div class="empty-grid">[ 空 ] 暂无文件，点击上方“载入字段文件”添加 (最多5个)</div>
+            </div>
+        </div>
+
+        <!-- 核心解除按钮 -->
+        <div class="resolve-zone">
+            <button class="resolve-trigger" id="startResolveBtn">
+                <span>[ > ]</span> 执行字段解除
+            </button>
+        </div>
+
+        <!-- 进度区域 (无时间预估) -->
+        <div class="progress-panel">
+            <div class="progress-header">
+                <span>解除进程</span>
+                <span class="percentage-big" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill-dynamic" id="activeProgressFill"></div>
+            </div>
+            <div class="status-message" id="progressStatusText">等待指令</div>
+        </div>
+    </div>
+    <footer>
+        高稳定性字段解除协议 · 实时加密校验 · 任务完成后可继续添加
+    </footer>
+</div>
+
+<script>
+    // ---------- 核心状态 ----------
+    let attachedFiles = [];            // 存储 File 对象
+    const MAX_FILE_LIMIT = 5;
+    let isResolvingActive = false;     // 解除进行中标志
+    let progressIntervalId = null;
+    let resolveStartTimestamp = 0;
+    const TOTAL_PROCESS_MS = 5 * 60 * 1000;   // 精确5分钟
+
+    // DOM 元素
+    const fileGrid = document.getElementById('fileGridContainer');
+    const totalCountSpan = document.getElementById('totalFileCount');
+    const maxCapacitySpan = document.getElementById('maxCapacity');
+    const addBtn = document.getElementById('addFileTrigger');
+    const hiddenFileInput = document.getElementById('fileImporter');
+    const resolveBtn = document.getElementById('startResolveBtn');
+    const progressFillDiv = document.getElementById('activeProgressFill');
+    const progressPercentSpan = document.getElementById('progressPercent');
+    const progressStatusSpan = document.getElementById('progressStatusText');
+
+    // 辅助: 文件大小格式化
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // 转义HTML
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 渲染文件网格 (复杂卡片样式)
+    function renderFileGrid() {
+        if (!fileGrid) return;
+        if (attachedFiles.length === 0) {
+            fileGrid.innerHTML = '<div class="empty-grid">[ 空 ] 暂无文件，点击上方“载入字段文件”添加 (最多5个)</div>';
+            totalCountSpan.innerText = '0';
+            return;
+        }
+
+        let cardsHtml = '';
+        attachedFiles.forEach((file, idx) => {
+            const fileName = file.name;
+            const extPart = fileName.split('.').pop() || 'dat';
+            const sizeText = formatBytes(file.size);
+            const lastMod = new Date(file.lastModified).toLocaleString();
+            cardsHtml += `
+                <div class="file-card" data-file-index="${idx}">
+                    <div class="file-card-info">
+                        <div class="file-card-name">
+                            <span>📄 ${escapeHtml(fileName)}</span>
+                            <span class="ext">.${extPart}</span>
+                        </div>
+                        <div class="file-card-meta">${sizeText} · 修订 ${lastMod}</div>
+                    </div>
+                    <button class="remove-card-btn" data-remove-idx="${idx}" ${isResolvingActive ? 'disabled' : ''}>移除</button>
+                </div>
+            `;
+        });
+        // 移除文件名前的📄表情符号（替换为无表情）
+        cardsHtml = cardsHtml.replace(/📄 /g, '');
+        fileGrid.innerHTML = cardsHtml;
+        totalCountSpan.innerText = attachedFiles.length;
+
+        // 绑定移除事件 (非解除中)
+        if (!isResolvingActive) {
+            document.querySelectorAll('.remove-card-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idxAttr = btn.getAttribute('data-remove-idx');
+                    if (idxAttr !== null) {
+                        const idx = parseInt(idxAttr, 10);
+                        if (!isNaN(idx) && idx >= 0 && idx < attachedFiles.length) {
+                            removeFileByIndex(idx);
+                        }
+                    }
+                });
+            });
+        }
+    }
+
+    // 移除文件并重新渲染
+    function removeFileByIndex(index) {
+        if (isResolvingActive) return;
+        if (index >= 0 && index < attachedFiles.length) {
+            attachedFiles.splice(index, 1);
+            renderFileGrid();
+            updateUIEnabling();
+            // 如果没有文件且不在解除中，重置进度显示
+            if (attachedFiles.length === 0 && !isResolvingActive) {
+                resetProgressPanel();
+            }
+        }
+    }
+
+    // 新增文件 (从input)
+    function importFilesFromList(fileList) {
+        if (isResolvingActive) {
+            showToastMessage("解除任务执行中，无法添加文件，请等待完成");
+            return;
+        }
+        if (!fileList || fileList.length === 0) return;
+        const incoming = Array.from(fileList);
+        const currentCount = attachedFiles.length;
+        const freeSlots = MAX_FILE_LIMIT - currentCount;
+        if (freeSlots <= 0) {
+            showToastMessage(`已达到上限 ${MAX_FILE_LIMIT} 个文件，请移除部分后再添加`);
+            return;
+        }
+        let added = 0;
+        for (let i = 0; i < incoming.length && added < freeSlots; i++) {
+            attachedFiles.push(incoming[i]);
+            added++;
+        }
+        if (incoming.length > freeSlots) {
+            showToastMessage(`仅添加了 ${freeSlots} 个文件，超出限制已忽略`);
+        } else {
+            showToastMessage(`成功添加 ${added} 个文件`);
+        }
+        renderFileGrid();
+        updateUIEnabling();
+        if (!isResolvingActive) {
+            resetProgressPanel();
+        }
+    }
+
+    // 重置进度面板 (0%)
+    function resetProgressPanel() {
+        if (!isResolvingActive) {
+            progressFillDiv.style.width = '0%';
+            progressPercentSpan.innerText = '0%';
+            progressStatusSpan.innerText = '就绪 · 等待解除指令';
+        }
+    }
+
+    // 更新所有按钮禁用状态
+    function updateUIEnabling() {
+        if (isResolvingActive) {
+            addBtn.disabled = true;
+            resolveBtn.disabled = true;
+        } else {
+            addBtn.disabled = (attachedFiles.length >= MAX_FILE_LIMIT);
+            resolveBtn.disabled = false;
+        }
+        // 重绘让移除按钮状态同步
+        renderFileGrid();
+        if (!isResolvingActive && attachedFiles.length >= MAX_FILE_LIMIT) {
+            addBtn.disabled = true;
+        } else if (!isResolvingActive) {
+            addBtn.disabled = false;
+        }
+    }
+
+    // 显示全局toast
+    let toastTimeout = null;
+    function showToastMessage(msg) {
+        let existingToast = document.querySelector('.toast-notify');
+        if (existingToast) existingToast.remove();
+        const toastDiv = document.createElement('div');
+        toastDiv.className = 'toast-notify';
+        toastDiv.innerText = msg;
+        document.body.appendChild(toastDiv);
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            if (toastDiv) toastDiv.remove();
+        }, 2800);
+    }
+
+    // 完成解除
+    function finishFieldUnlock() {
+        if (progressIntervalId) {
+            clearInterval(progressIntervalId);
+            progressIntervalId = null;
+        }
+        isResolvingActive = false;
+        progressFillDiv.style.width = '100%';
+        progressPercentSpan.innerText = '100%';
+        progressStatusSpan.innerText = '解除完成 · 所有字段约束已释放';
+        updateUIEnabling();
+        resolveBtn.innerHTML = '<span>[ > ]</span> 执行字段解除';
+        showToastMessage("字段解除成功！可继续添加或移除文件进行新的任务");
+    }
+
+    // 更新进度 (基于时间)
+    function updateProgressByTimestamp(currentMs) {
+        if (!isResolvingActive) return;
+        const elapsed = currentMs - resolveStartTimestamp;
+        let percent = (elapsed / TOTAL_PROCESS_MS) * 100;
+        if (percent >= 100) {
+            percent = 100;
+            progressFillDiv.style.width = '100%';
+            progressPercentSpan.innerText = '100%';
+            finishFieldUnlock();
+            return;
+        }
+        const percentInt = Math.floor(percent);
+        progressFillDiv.style.width = `${percent}%`;
+        progressPercentSpan.innerText = `${percentInt}%`;
+        // 更新状态文本，无剩余时间字样
+        if (percentInt < 30) progressStatusSpan.innerText = '正在解析元数据 · 解除中';
+        else if (percentInt < 70) progressStatusSpan.innerText = '字段约束解除执行中 · 请稍候';
+        else progressStatusSpan.innerText = '即将完成 · 校验完整性';
+    }
+
+    // 启动进度轮询 (高频平滑)
+    function startProgressWatcher() {
+        if (progressIntervalId) clearInterval(progressIntervalId);
+        progressIntervalId = setInterval(() => {
+            if (!isResolvingActive) {
+                if (progressIntervalId) clearInterval(progressIntervalId);
+                return;
+            }
+            const now = Date.now();
+            updateProgressByTimestamp(now);
+        }, 120);
+    }
+
+    // 开始解除任务 (无任何预计时间展示)
+    function launchFieldUnlock() {
+        if (isResolvingActive) {
+            showToastMessage("已有解除任务进行中，请等待完成");
+            return;
+        }
+        if (attachedFiles.length === 0) {
+            showToastMessage("未选择任何文件，无法执行字段解除");
+            return;
+        }
+
+        // 清除残余
+        if (progressIntervalId) clearInterval(progressIntervalId);
+        isResolvingActive = true;
+        resolveStartTimestamp = Date.now();
+
+        // 重置进度显示到0%
+        progressFillDiv.style.width = '0%';
+        progressPercentSpan.innerText = '0%';
+        progressStatusSpan.innerText = '正在解除字段约束 · 执行中';
+        updateUIEnabling();
+        resolveBtn.innerHTML = '<span>[ ... ]</span> 解除中，请等待';
+
+        // 启动进度模拟
+        startProgressWatcher();
+
+        // 安全兜底: 确保5分钟后强制结束
+        setTimeout(() => {
+            if (isResolvingActive) {
+                const nowCheck = Date.now();
+                if (nowCheck - resolveStartTimestamp >= TOTAL_PROCESS_MS - 80) {
+                    finishFieldUnlock();
+                } else {
+                    // 强制完成
+                    progressFillDiv.style.width = '100%';
+                    progressPercentSpan.innerText = '100%';
+                    finishFieldUnlock();
+                }
+            }
+        }, TOTAL_PROCESS_MS + 150);
+    }
+
+    // 事件绑定
+    function bindEvents() {
+        addBtn.addEventListener('click', () => {
+            if (isResolvingActive) {
+                showToastMessage("解除任务进行中，无法添加文件");
+                return;
+            }
+            if (attachedFiles.length >= MAX_FILE_LIMIT) {
+                showToastMessage(`文件数量已达上限 ${MAX_FILE_LIMIT} 个，请移除后再添加`);
+                return;
+            }
+            hiddenFileInput.click();
+        });
+
+        hiddenFileInput.addEventListener('change', (e) => {
+            if (isResolvingActive) {
+                showToastMessage("解除任务进行中，无法添加");
+                hiddenFileInput.value = '';
+                return;
+            }
+            const files = e.target.files;
+            if (files && files.length) {
+                importFilesFromList(files);
+            }
+            hiddenFileInput.value = ''; // 清空
+        });
+
+        resolveBtn.addEventListener('click', () => {
+            if (isResolvingActive) {
+                showToastMessage("解除任务正在运行，请耐心等待完成");
+                return;
+            }
+            if (attachedFiles.length === 0) {
+                showToastMessage("请先添加需要解除字段的数据文件");
+                return;
+            }
+            launchFieldUnlock();
+        });
+    }
+
+    // 初始化界面
+    function init() {
+        maxCapacitySpan.innerText = MAX_FILE_LIMIT;
+        attachedFiles = [];
+        renderFileGrid();
+        updateUIEnabling();
+        resetProgressPanel();
+        bindEvents();
+    }
+
+    // 页面关闭前清理定时器
+    window.addEventListener('beforeunload', () => {
+        if (progressIntervalId) clearInterval(progressIntervalId);
+    });
+
+    init();
+</script>
+</body>
+</html>
