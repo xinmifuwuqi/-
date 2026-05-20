@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星链Wi-Fi连接监控系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #0a0e17;
+            color: #e0f0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(41, 83, 156, 0.15) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(56, 152, 236, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, rgba(24, 56, 105, 0.2) 0%, transparent 50%);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(56, 152, 236, 0.3);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            color: #2a7fff;
+            font-size: 2.5rem;
+            filter: drop-shadow(0 0 10px rgba(42, 127, 255, 0.5));
+        }
+        
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #2a7fff, #6cb4ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+        }
+        
+        .logo-subtext {
+            font-size: 0.9rem;
+            color: #8cb4ff;
+            margin-top: 5px;
+            letter-spacing: 3px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(20, 40, 80, 0.5);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(56, 152, 236, 0.3);
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #4cff4c;
+            box-shadow: 0 0 10px #4cff4c;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-panel {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(145deg, rgba(16, 33, 68, 0.8), rgba(10, 22, 46, 0.8));
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(56, 152, 236, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 20, 60, 0.3);
+        }
+        
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .stats-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #6cb4ff;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(20, 40, 80, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(56, 152, 236, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2a7fff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #8cb4ff;
+        }
+        
+        .devices-card {
+            background: linear-gradient(145deg, rgba(16, 33, 68, 0.8), rgba(10, 22, 46, 0.8));
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(56, 152, 236, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 20, 60, 0.3);
+            overflow: hidden;
+        }
+        
+        .devices-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .devices-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #6cb4ff;
+        }
+        
+        .device-count {
+            background: rgba(56, 152, 236, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .devices-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .device-item {
+            background: rgba(20, 40, 80, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(56, 152, 236, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .device-item:hover {
+            background: rgba(30, 60, 120, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 20, 60, 0.4);
+        }
+        
+        .device-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(42, 127, 255, 0.1);
+            border-radius: 10px;
+            font-size: 1.5rem;
+            color: #6cb4ff;
+        }
+        
+        .device-info {
+            flex-grow: 1;
+        }
+        
+        .device-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #e0f0ff;
+        }
+        
+        .device-type {
+            font-size: 0.85rem;
+            color: #8cb4ff;
+        }
+        
+        .device-extra {
+            font-size: 0.7rem;
+            color: #6cb4ff;
+            margin-top: 3px;
+        }
+        
+        .device-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .status-connected {
+            color: #4cff4c;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-offline {
+            color: #ff5555;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .offline-time {
+            font-size: 0.75rem;
+            color: #ffaaaa;
+            margin-top: 3px;
+        }
+        
+        .signal-strength {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .signal-bar {
+            width: 4px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        .signal-bar.active {
+            background-color: #4cff4c;
+        }
+        
+        .control-panel {
+            background: linear-gradient(145deg, rgba(16, 33, 68, 0.8), rgba(10, 22, 46, 0.8));
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(56, 152, 236, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 20, 60, 0.3);
+        }
+        
+        .control-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #6cb4ff;
+            margin-bottom: 25px;
+        }
+        
+        .control-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .control-btn {
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(42, 127, 255, 0.2);
+            color: #e0f0ff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid rgba(56, 152, 236, 0.2);
+        }
+        
+        .control-btn:hover {
+            background: rgba(42, 127, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .speed-test {
+            background: rgba(20, 40, 80, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .speed-title {
+            font-size: 1rem;
+            color: #8cb4ff;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .speed-bar {
+            height: 10px;
+            background: rgba(20, 40, 80, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .speed-fill {
+            height: 100%;
+            background: linear-gradient(to right, #2a7fff, #6cb4ff);
+            width: 85%;
+            border-radius: 5px;
+        }
+        
+        .speed-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #8cb4ff;
+        }
+        
+        .status-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .status-online {
+            background-color: rgba(76, 255, 76, 0.2);
+            color: #4cff4c;
+        }
+        
+        .status-offline-tag {
+            background-color: rgba(255, 85, 85, 0.2);
+            color: #ff5555;
+        }
+        
+        .offline-marker {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: rgba(255, 85, 85, 0.1);
+            color: #ffaaaa;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            margin-left: 5px;
+            border: 1px solid rgba(255, 85, 85, 0.3);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 1px solid rgba(56, 152, 236, 0.3);
+            color: #8cb4ff;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .control-buttons {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 40, 80, 0.3);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(42, 127, 255, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(42, 127, 255, 0.7);
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 5s infinite;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-satellite"></i></div>
+                <div>
+                    <div class="logo-text">星链Wi-Fi监控系统</div>
+                    <div class="logo-subtext">STARLINK NETWORK</div>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span id="onlineStatusText">在线 · 11台设备已连接</span>
+            </div>
+        </header>
+        
+        <div class="main-panel">
+            <div>
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <div class="stats-title">网络状态概览</div>
+                        <div class="last-update">最后更新：刚刚</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">总设备数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">11</div>
+                            <div class="stat-label">在线设备</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">离线设备</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="devices-card" style="margin-top: 25px;">
+                    <div class="devices-header">
+                        <div class="devices-title">设备连接状态</div>
+                        <div class="device-count">15台设备</div>
+                    </div>
+                    <div class="devices-list" id="devicesList"></div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-title">网络控制面板</div>
+                <div class="control-buttons">
+                    <button class="control-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新设备</button>
+                    <button class="control-btn" id="blockAllBtn"><i class="fas fa-shield-alt"></i> 安全扫描</button>
+                    <button class="control-btn" id="optimizeBtn"><i class="fas fa-tachometer-alt"></i> 优化网络</button>
+                    <button class="control-btn" id="restartBtn"><i class="fas fa-power-off"></i> 重启路由器</button>
+                </div>
+                
+                <div class="speed-test">
+                    <div class="speed-title"><span>当前网速测试</span><span>星链卫星 #4582</span></div>
+                    <div class="speed-bar"><div class="speed-fill" id="downloadSpeedBar"></div></div>
+                    <div class="speed-values"><span>下载速度：<span id="downloadSpeed">855</span> Mbps</span><span>延迟：<span id="latency">28</span> ms</span></div>
+                </div>
+                
+                <div class="speed-test" style="margin-top: 25px;">
+                    <div class="speed-title"><span>设备状态统计</span><span>当前时间：<span id="currentTime"></span></span></div>
+                    <div class="speed-values">
+                        <div>
+                            <div style="margin-bottom: 5px;">在线设备：11台</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• 秦&iPhone 17 Pro Max</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• iPhone</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• 小石头HUA WEI Mate 70RS</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• 6台华为电脑</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• 小米监控 (香港)</div>
+                            <div style="font-size: 0.8rem; color: #4cff4c;">• VMware</div>
+                        </div>
+                        <div>
+                            <div style="margin-bottom: 5px;">离线设备：4台</div>
+                            <div style="font-size: 0.8rem; color: #ff5555;">• 大卫哥的iPhone (今天 07:28)</div>
+                            <div style="font-size: 0.8rem; color: #ff5555;">• 璐的iPhone 16 Pro (今天 08:11)</div>
+                            <div style="font-size: 0.8rem; color: #ff5555;">• 王宝军Mate XT (昨天 03:12)</div>
+                            <div style="font-size: 0.8rem; color: #ff5555;">• 华为电脑 (昨天 03:10)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>星链Wi-Fi监控系统 v3.0 • 系统状态：<span style="color: #4cff4c;">正常</span> | 小米监控已连接 (香港) | VMware可用</p>
+            <p style="margin-top: 5px;">© 2025 SpaceX Starlink Network. 所有连接已加密保护。</p>
+        </footer>
+    </div>
+    
+    <script>
+        // 设备数据 - 根据最新要求更新离线时间（支持“昨天”/“今天”）
+        const devices = [
+            // 手机设备
+            { name: "大卫哥的iPhone", type: "iPhone 15 Pro", signal: 0, connected: false, offlineTime: "今天 07:28" },
+            { name: "秦&iPhone 17 Pro Max", type: "iPhone 17 Pro Max", signal: 5, connected: true },
+            { name: "璐的iPhone 16 Pro", type: "iPhone 16 Pro", signal: 0, connected: false, offlineTime: "今天 08:11" },
+            { name: "小石头的HUA WEI Mate 70RS", type: "HUAWEI Mate 70RS", signal: 5, connected: true },
+            { name: "iPhone", type: "iPhone 14", signal: 5, connected: true },
+            { name: "王宝军的HUA WEI Mate XT", type: "HUAWEI Mate XT", signal: 0, connected: false, offlineTime: "昨天 03:12" },
+            
+            // 7台华为电脑：6台在线，1台离线（AL00 离线 昨天 03:10）
+            { name: "HUAWEI-PAL-AL00", type: "华为电脑", signal: 0, connected: false, offlineTime: "昨天 03:10" },
+            { name: "HUAWEI-PAL-AL13", type: "华为电脑", signal: 5, connected: true },
+            { name: "HUAWEI-PAL-PT51", type: "华为电脑", signal: 5, connected: true },
+            { name: "HUAWEI-PAL-AL19", type: "华为电脑", signal: 5, connected: true },
+            { name: "HUAWEI-PAL-AL27", type: "华为电脑", signal: 5, connected: true },
+            { name: "HUAWEI-PAL-AL34", type: "华为电脑", signal: 5, connected: true },
+            { name: "HUAWEI-PAL-AL42", type: "华为电脑", signal: 5, connected: true },
+            
+            // 新增设备
+            { name: "小米监控", type: "智能摄像头", extra: "IP: 192.168.1.1 (香港)", signal: 5, connected: true },
+            { name: "VMware", type: "虚拟机", extra: "可用", signal: 5, connected: true }
+        ];
+        
+        // 生成星空背景
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const size = Math.random() * 3;
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const duration = 2 + Math.random() * 3;
+                const delay = Math.random() * 5;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.animationDuration = `${duration}s`;
+                star.style.animationDelay = `${delay}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // 更新当前时间显示
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('currentTime').textContent = `${hours}:${minutes}`;
+        }
+        
+        // 渲染设备列表
+        function renderDevices() {
+            const devicesList = document.getElementById('devicesList');
+            devicesList.innerHTML = '';
+            
+            let onlineCount = devices.filter(d => d.connected).length;
+            document.getElementById('onlineStatusText').textContent = `在线 · ${onlineCount}台设备已连接`;
+            
+            devices.forEach(device => {
+                let iconClass = "fas fa-mobile-alt";
+                if (device.type.includes("电脑")) iconClass = "fas fa-laptop";
+                else if (device.type === "智能摄像头") iconClass = "fas fa-video";
+                else if (device.type === "虚拟机") iconClass = "fas fa-server";
+                else if (device.type.includes("HUAWEI Mate")) iconClass = "fas fa-mobile-alt";
+                
+                // 信号强度条
+                let signalBars = '';
+                for (let i = 1; i <= 5; i++) {
+                    signalBars += `<div class="signal-bar ${i <= device.signal ? 'active' : ''}"></div>`;
+                }
+                
+                let statusHtml = '';
+                if (device.connected) {
+                    statusHtml = `
+                        <div class="status-connected">
+                            <i class="fas fa-circle" style="font-size: 0.6rem;"></i>
+                            在线
+                        </div>
+                        <div class="signal-strength">${signalBars}</div>
+                    `;
+                } else {
+                    statusHtml = `
+                        <div class="status-offline">
+                            <i class="fas fa-circle" style="font-size: 0.6rem;"></i>
+                            离线
+                        </div>
+                        <div class="offline-time">离线时间：${device.offlineTime}</div>
+                    `;
+                }
+                
+                let statusTag = '';
+                if (device.connected && (device.name === "秦&iPhone 17 Pro Max" || device.name === "iPhone" || device.name === "小石头的HUA WEI Mate 70RS")) {
+                    statusTag = '<span class="status-tag status-online">在线</span>';
+                } else if (!device.connected) {
+                    statusTag = '<span class="status-tag status-offline-tag">离线</span>';
+                }
+                
+                let offlineMarker = '';
+                if (!device.connected && device.offlineTime) {
+                    offlineMarker = `<span class="offline-marker">${device.offlineTime}离线</span>`;
+                }
+                
+                let extraHtml = device.extra ? `<div class="device-extra"><i class="fas fa-info-circle"></i> ${device.extra}</div>` : '';
+                
+                const deviceElement = document.createElement('div');
+                deviceElement.className = 'device-item';
+                deviceElement.innerHTML = `
+                    <div class="device-icon"><i class="${iconClass}"></i></div>
+                    <div class="device-info">
+                        <div class="device-name">${device.name}${statusTag}${offlineMarker}</div>
+                        <div class="device-type">${device.type}</div>
+                        ${extraHtml}
+                    </div>
+                    <div class="device-status">${statusHtml}</div>
+                `;
+                devicesList.appendChild(deviceElement);
+            });
+        }
+        
+        // 网速模拟
+        function updateSpeed() {
+            const baseSpeed = 855;
+            const variation = Math.floor(Math.random() * 30) - 15;
+            const newSpeed = baseSpeed + variation;
+            document.getElementById('downloadSpeed').textContent = newSpeed;
+            document.getElementById('downloadSpeedBar').style.width = `${(newSpeed / 1000) * 100}%`;
+            const baseLatency = 28;
+            const latencyVariation = Math.floor(Math.random() * 10) - 5;
+            const newLatency = Math.max(20, baseLatency + latencyVariation);
+            document.getElementById('latency').textContent = newLatency;
+        }
+        
+        // 重新连接（模拟）
+        function reconnectDevice(deviceIndex) {
+            devices[deviceIndex].connected = true;
+            devices[deviceIndex].signal = Math.floor(Math.random() * 3) + 3;
+            renderDevices();
+            showNotification(`${devices[deviceIndex].name} 已重新连接`);
+        }
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; background: rgba(20,40,80,0.9);
+                color: #e0f0ff; padding: 15px 20px; border-radius: 10px;
+                border-left: 5px solid #2a7fff; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                z-index: 1000; transform: translateX(120%); transition: transform 0.3s ease;
+                max-width: 300px; font-weight: 500;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => { notification.style.transform = 'translateX(0)'; }, 10);
+            setTimeout(() => {
+                notification.style.transform = 'translateX(120%)';
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 扫描中...';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> 刷新设备';
+                    const randomIndex = Math.floor(Math.random() * devices.length);
+                    const newSignal = Math.floor(Math.random() * 3) + 3;
+                    devices[randomIndex].signal = newSignal;
+                    renderDevices();
+                    showNotification(`设备扫描完成，更新了${devices[randomIndex].name}的信号强度`);
+                }, 1500);
+            });
+            document.getElementById('blockAllBtn').addEventListener('click', function() {
+                this.innerHTML = '<i class="fas fa-shield-alt"></i> 扫描中...';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-shield-alt"></i> 安全扫描';
+                    showNotification('安全扫描完成，未发现威胁设备');
+                }, 2000);
+            });
+            document.getElementById('optimizeBtn').addEventListener('click', function() {
+                this.innerHTML = '<i class="fas fa-cog fa-spin"></i> 优化中...';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-tachometer-alt"></i> 优化网络';
+                    const speedEl = document.getElementById('downloadSpeed');
+                    let newSpeed = parseInt(speedEl.textContent) + Math.floor(Math.random() * 50) + 20;
+                    speedEl.textContent = newSpeed;
+                    document.getElementById('downloadSpeedBar').style.width = `${(newSpeed / 1000) * 100}%`;
+                    showNotification('网络优化完成，下载速度提升');
+                }, 1800);
+            });
+            document.getElementById('restartBtn').addEventListener('click', function() {
+                this.innerHTML = '<i class="fas fa-power-off"></i> 重启中...';
+                this.disabled = true;
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-power-off"></i> 重启路由器';
+                    this.disabled = false;
+                    devices.forEach(d => { d.connected = true; d.signal = Math.min(5, d.signal + 1); });
+                    renderDevices();
+                    showNotification('路由器重启完成，所有设备已重新连接');
+                }, 3000);
+            });
+            
+            // 点击离线设备重新连接
+            document.getElementById('devicesList').addEventListener('click', function(e) {
+                const item = e.target.closest('.device-item');
+                if (!item) return;
+                const nameElem = item.querySelector('.device-name');
+                let rawName = nameElem.textContent.replace(/在线|离线|\(.*?\)/g, '').replace(/\d+:\d+离线/g, '').replace(/昨天|今天/g, '').trim();
+                const idx = devices.findIndex(d => d.name === rawName);
+                if (idx !== -1 && !devices[idx].connected) {
+                    reconnectDevice(idx);
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            createStars();
+            renderDevices();
+            setupEventListeners();
+            setInterval(updateSpeed, 10000);
+            setInterval(updateCurrentTime, 1000);
+            updateSpeed();
+            updateCurrentTime();
+        });
+    </script>
+</body>
+</html>
