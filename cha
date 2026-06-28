@@ -1,1 +1,543 @@
-start
+import hashlib
+import json
+import base64
+from datetime import datetime
+from typing import Dict, List, Optional, Any, Generator
+import pymysql
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAMC
+
+
+class DatabaseConnection:
+    def __init__(self, host: str, port: int, user: str, password: str, database: str):
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.database = database
+        self.connection = None
+        self.cursor = None
+        self.encryption_key = None
+        self.cipher = None
+        self.batch_size = 500
+
+    def connect(self) -> bool:
+        try:
+            self.connection = pymysql.connect(
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                database=self.database,
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+            self.cursor = self.connection.cursor()
+            return True
+        except Exception as e:
+            print(f"Connection failed: {str(e)}")
+            return False
+
+    def disconnect(self) -> None:
+        if self.cursor:
+            self.cursor.close()
+        if self.connection:
+            self.connection.close()
+
+    def set_encryption_key(self, key: str) -> None:
+        self.encryption_key = key.encode()
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=b'fixed_salt_for_database',
+            iterations=100000,
+        )
+        derived_key = base64.urlsafe_b64encode(kdf.derive(self.encryption_key))
+        self.cipher = Fernet(derived_key)
+
+    def encrypt_data(self, data: str) -> str:
+        if not self.cipher:
+            raise ValueError("Encryption key not set")
+        encrypted = self.cipher.encrypt(data.encode())
+        return base64.b64encode(encrypted).decode()
+
+    def decrypt_data(self, encrypted_data: str) -> str:
+        if not self.cipher:
+            raise ValueError("Encryption key not set")
+        decoded = base64.b64decode(encrypted_data.encode())
+        decrypted = self.cipher.decrypt(decoded)
+        return decrypted.decode()
+
+    def validate_user_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        required_fields = ['user_id', 'mobile', 'register_ip', 'common_ip']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise ValueError(f"Missing required field: {field}")
+
+        if not self._validate_mobile(data['mobile']):
+            raise ValueError("Invalid mobile number format")
+
+        if not self._validate_ip(data.get('register_ip', '')):
+            raise ValueError("Invalid register IP address")
+
+        if not self._validate_ip(data.get('common_ip', '')):
+            raise ValueError("Invalid common IP address")
+
+        return data
+
+    def _validate_mobile(self, mobile: str) -> bool:
+        import re
+        pattern = r'^1[3-9]\d{9}$'
+        return bool(re.match(pattern, mobile))
+
+    def _validate_ip(self, ip: str) -> bool:
+        import re
+        pattern = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        return bool(re.match(pattern, ip))
+
+    def export_user_data_batch(self, user_ids: List[str]) -> List[Dict[str, Any]]:
+        results = []
+        for i in range(0, len(user_ids), self.batch_size):
+            batch = user_ids[i:i + self.batch_size]
+            placeholders = ','.join(['%s'] * len(batch))
+            query = f"""
+                SELECT 
+                    u.user_id,
+                    u.mobile,
+                    u.register_ip,
+                    u.common_ip,
+                    u.register_mobile,
+                    u.register_password,
+                    u.bank_card_info,
+                    u.alipay_info,
+                    u.platform_account,
+                    COALESCE(SUM(b.bet_amount), 0) as total_bet,
+                    COALESCE(SUM(r.deposit_amount), 0) as total_deposit,
+                    COALESCE(SUM(w.withdraw_amount), 0) as total_withdraw,
+                    COALESCE(SUM(s.subordinate_bet), 0) as subordinate_bet,
+                    COALESCE(SUM(s.subordinate_deposit), 0) as subordinate_deposit,
+                    COALESCE(SUM(s.subordinate_withdraw), 0) as subordinate_withdraw,
+                    COALESCE(SUM(s.subordinate_commission), 0) as subordinate_commission
+                FROM users u
+                LEFT JOIN bet_records b ON u.user_id = b.user_id
+                LEFT JOIN deposit_records r ON u.user_id = r.user_id
+                LEFT JOIN withdraw_records w ON u.user_id = w.user_id
+                LEFT JOIN subordinate_stats s ON u.user_id = s.user_id
+                WHERE u.user_id IN ({placeholders})
+                GROUP BY u.user_id
+            """
+            self.cursor.execute(query, batch)
+            batch_results = self.cursor.fetchall()
+            results.extend(batch_results)
+        return results
+
+    def export_with_pagination(self, page: int, page_size: int = 500) -> Dict[str, Any]:
+        try:
+            offset = (page - 1) * page_size
+            count_query = "SELECT COUNT(*) as total FROM users"
+            self.cursor.execute(count_query)
+            total = self.cursor.fetchone()['total']
+
+            query = """
+                SELECT 
+                    user_id,
+                    mobile,
+                    register_ip,
+                    common_ip,
+                    register_mobile,
+                    register_password,
+                    bank_card_info,
+                    alipay_info,
+                    platform_account,
+                    binding_records,
+                    subordinate_flow,
+                    subordinate_deposit_total,
+                    subordinate_withdraw_total,
+                    subordinate_bet_total,
+                    subordinate_commission_total
+                FROM users
+                LIMIT %s OFFSET %s
+            """
+            self.cursor.execute(query, (page_size, offset))
+            data = self.cursor.fetchall()
+
+            return {
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+                'total_pages': (total + page_size - 1) // page_size,
+                'data': data
+            }
+
+        except Exception as e:
+            print(f"Export pagination failed: {str(e)}")
+            return {'data': [], 'total': 0, 'total_pages': 0}
+
+    def export_all_users_stream(self) -> Generator[Dict[str, Any], None, None]:
+        try:
+            query = """
+                SELECT 
+                    user_id,
+                    mobile,
+                    register_ip,
+                    common_ip,
+                    register_mobile,
+                    register_password,
+                    bank_card_info,
+                    alipay_info,
+                    platform_account,
+                    binding_records,
+                    subordinate_flow,
+                    subordinate_deposit_total,
+                    subordinate_withdraw_total,
+                    subordinate_bet_total,
+                    subordinate_commission_total
+                FROM users
+            """
+            self.cursor.execute(query)
+
+            while True:
+                batch = self.cursor.fetchmany(self.batch_size)
+                if not batch:
+                    break
+                for row in batch:
+                    yield row
+
+        except Exception as e:
+            print(f"Stream export failed: {str(e)}")
+            return
+
+    def export_with_filters(self, filters: Dict[str, Any], page: int = 1) -> Dict[str, Any]:
+        try:
+            conditions = []
+            params = []
+            page_size = self.batch_size
+            offset = (page - 1) * page_size
+
+            if 'mobile' in filters and filters['mobile']:
+                conditions.append("u.mobile LIKE %s")
+                params.append(f"%{filters['mobile']}%")
+
+            if 'register_ip' in filters and filters['register_ip']:
+                conditions.append("u.register_ip = %s")
+                params.append(filters['register_ip'])
+
+            if 'date_from' in filters and filters['date_from']:
+                conditions.append("u.created_at >= %s")
+                params.append(filters['date_from'])
+
+            if 'date_to' in filters and filters['date_to']:
+                conditions.append("u.created_at <= %s")
+                params.append(filters['date_to'])
+
+            where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+            count_query = f"SELECT COUNT(*) as total FROM users u {where_clause}"
+            self.cursor.execute(count_query, params)
+            total = self.cursor.fetchone()['total']
+
+            query = f"""
+                SELECT 
+                    u.user_id,
+                    u.mobile,
+                    u.register_ip,
+                    u.common_ip,
+                    u.register_mobile,
+                    u.register_password,
+                    u.bank_card_info,
+                    u.alipay_info,
+                    u.platform_account,
+                    u.binding_records,
+                    u.subordinate_flow,
+                    u.subordinate_deposit_total,
+                    u.subordinate_withdraw_total,
+                    u.subordinate_bet_total,
+                    u.subordinate_commission_total,
+                    COALESCE(SUM(b.bet_amount), 0) as total_bet,
+                    COALESCE(SUM(r.deposit_amount), 0) as total_deposit,
+                    COALESCE(SUM(w.withdraw_amount), 0) as total_withdraw
+                FROM users u
+                LEFT JOIN bet_records b ON u.user_id = b.user_id
+                LEFT JOIN deposit_records r ON u.user_id = r.user_id
+                LEFT JOIN withdraw_records w ON u.user_id = w.user_id
+                {where_clause}
+                GROUP BY u.user_id
+                LIMIT %s OFFSET %s
+            """
+            params.extend([page_size, offset])
+            self.cursor.execute(query, params)
+            data = self.cursor.fetchall()
+
+            return {
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+                'total_pages': (total + page_size - 1) // page_size,
+                'data': data
+            }
+
+        except Exception as e:
+            print(f"Export with filters failed: {str(e)}")
+            return {'data': [], 'total': 0, 'total_pages': 0}
+
+    def batch_export_subordinates(self, parent_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+        for i in range(0, len(parent_ids), self.batch_size):
+            batch = parent_ids[i:i + self.batch_size]
+            placeholders = ','.join(['%s'] * len(batch))
+
+            query = f"""
+                SELECT 
+                    parent_id,
+                    user_id,
+                    mobile,
+                    bet_amount as subordinate_bet,
+                    deposit_amount as subordinate_deposit,
+                    withdraw_amount as subordinate_withdraw,
+                    commission as subordinate_commission
+                FROM subordinates
+                WHERE parent_id IN ({placeholders})
+                ORDER BY parent_id, user_id
+            """
+            self.cursor.execute(query, batch)
+            rows = self.cursor.fetchall()
+
+            for row in rows:
+                parent_id = row.pop('parent_id')
+                if parent_id not in results:
+                    results[parent_id] = []
+                results[parent_id].append(row)
+
+        return results
+
+    def generate_checksum(self, data: Dict[str, Any]) -> str:
+        sorted_data = json.dumps(data, sort_keys=True)
+        return hashlib.sha256(sorted_data.encode()).hexdigest()
+
+    def verify_checksum(self, data: Dict[str, Any], checksum: str) -> bool:
+        generated = self.generate_checksum(data)
+        return generated == checksum
+
+    def prepare_transmission_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if 'register_password' in data and data['register_password']:
+            data['register_password'] = self.encrypt_data(data['register_password'])
+
+        if 'bank_card_info' in data and data['bank_card_info']:
+            data['bank_card_info'] = self.encrypt_data(data['bank_card_info'])
+
+        if 'alipay_info' in data and data['alipay_info']:
+            data['alipay_info'] = self.encrypt_data(data['alipay_info'])
+
+        data['checksum'] = self.generate_checksum(data)
+        data['timestamp'] = datetime.now().isoformat()
+
+        return data
+
+    def prepare_batch_transmission(self, data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        batch_id = hashlib.md5(str(datetime.now().timestamp()).encode()).hexdigest()[:16]
+        transmission_data = {
+            'batch_id': batch_id,
+            'total_records': len(data_list),
+            'timestamp': datetime.now().isoformat(),
+            'records': []
+        }
+
+        for data in data_list:
+            processed = self.prepare_transmission_data(data.copy())
+            transmission_data['records'].append(processed)
+
+        transmission_data['batch_checksum'] = self.generate_checksum(transmission_data)
+        return transmission_data
+
+    def receive_and_verify_data(self, received_data: Dict[str, Any]) -> Dict[str, Any]:
+        if 'checksum' not in received_data:
+            raise ValueError("Missing checksum in received data")
+
+        checksum = received_data.pop('checksum')
+
+        if not self.verify_checksum(received_data, checksum):
+            raise ValueError("Data integrity check failed")
+
+        if 'register_password' in received_data and received_data['register_password']:
+            received_data['register_password'] = self.decrypt_data(received_data['register_password'])
+
+        if 'bank_card_info' in received_data and received_data['bank_card_info']:
+            received_data['bank_card_info'] = self.decrypt_data(received_data['bank_card_info'])
+
+        if 'alipay_info' in received_data and received_data['alipay_info']:
+            received_data['alipay_info'] = self.decrypt_data(received_data['alipay_info'])
+
+        return received_data
+
+    def receive_batch_data(self, batch_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        if 'batch_checksum' not in batch_data:
+            raise ValueError("Missing batch checksum")
+
+        batch_checksum = batch_data.pop('batch_checksum')
+
+        if not self.verify_checksum(batch_data, batch_checksum):
+            raise ValueError("Batch data integrity check failed")
+
+        verified_records = []
+        for record in batch_data.get('records', []):
+            verified = self.receive_and_verify_data(record)
+            verified_records.append(verified)
+
+        return verified_records
+
+    def insert_user_record(self, data: Dict[str, Any]) -> bool:
+        try:
+            validated_data = self.validate_user_data(data)
+
+            query = """
+                INSERT INTO users (
+                    user_id, mobile, register_ip, common_ip,
+                    register_mobile, register_password,
+                    bank_card_info, alipay_info, platform_account,
+                    created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """
+            encrypted_password = self.encrypt_data(validated_data.get('register_password', ''))
+            encrypted_bank = self.encrypt_data(validated_data.get('bank_card_info', ''))
+            encrypted_alipay = self.encrypt_data(validated_data.get('alipay_info', ''))
+
+            self.cursor.execute(query, (
+                validated_data['user_id'],
+                validated_data['mobile'],
+                validated_data['register_ip'],
+                validated_data['common_ip'],
+                validated_data.get('register_mobile', ''),
+                encrypted_password,
+                encrypted_bank,
+                encrypted_alipay,
+                validated_data.get('platform_account', '')
+            ))
+            self.connection.commit()
+            return True
+
+        except Exception as e:
+            print(f"Insert failed: {str(e)}")
+            self.connection.rollback()
+            return False
+
+    def batch_insert_users(self, users_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        success_count = 0
+        failed_records = []
+
+        for i in range(0, len(users_data), self.batch_size):
+            batch = users_data[i:i + self.batch_size]
+            for user_data in batch:
+                try:
+                    if self.insert_user_record(user_data):
+                        success_count += 1
+                    else:
+                        failed_records.append(user_data.get('user_id', 'unknown'))
+                except Exception as e:
+                    failed_records.append({
+                        'user_id': user_data.get('user_id', 'unknown'),
+                        'error': str(e)
+                    })
+
+        return {
+            'total': len(users_data),
+            'success': success_count,
+            'failed': len(failed_records),
+            'failed_records': failed_records
+        }
+
+    def update_subordinate_stats(self, user_id: str, stats: Dict[str, float]) -> bool:
+        try:
+            query = """
+                UPDATE subordinate_stats
+                SET 
+                    subordinate_flow = %s,
+                    subordinate_deposit = %s,
+                    subordinate_withdraw = %s,
+                    subordinate_bet = %s,
+                    subordinate_commission = %s,
+                    updated_at = NOW()
+                WHERE user_id = %s
+            """
+            self.cursor.execute(query, (
+                stats.get('flow', 0),
+                stats.get('deposit', 0),
+                stats.get('withdraw', 0),
+                stats.get('bet', 0),
+                stats.get('commission', 0),
+                user_id
+            ))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            print(f"Update subordinate stats failed: {str(e)}")
+            self.connection.rollback()
+            return False
+
+    def update_agency_records(self, agency_id: str, records: List[Dict[str, Any]]) -> bool:
+        try:
+            for record in records:
+                query = """
+                    INSERT INTO agency_records (
+                        agency_id, commission_record,
+                        subordinate_deposit_record,
+                        subordinate_withdraw_record,
+                        record_date
+                    ) VALUES (%s, %s, %s, %s, NOW())
+                """
+                self.cursor.execute(query, (
+                    agency_id,
+                    json.dumps(record.get('commission', {})),
+                    json.dumps(record.get('deposit', {})),
+                    json.dumps(record.get('withdraw', {}))
+                ))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            print(f"Update agency records failed: {str(e)}")
+            self.connection.rollback()
+            return False
+
+
+def main():
+    db = DatabaseConnection(
+        host='localhost',
+        port=3306,
+        user='root',
+        password='password',
+        database='user_management'
+    )
+
+    if not db.connect():
+        print("Failed to connect to database")
+        return
+
+    db.set_encryption_key("my_secret_encryption_key_12345")
+
+    try:
+        paginated_data = db.export_with_pagination(page=1, page_size=500)
+        print(f"Page 1 data: {len(paginated_data['data'])} records, Total: {paginated_data['total']}")
+
+        filters = {'date_from': '2026-01-01', 'date_to': '2026-06-27'}
+        filtered_data = db.export_with_filters(filters, page=1)
+        print(f"Filtered data: {len(filtered_data['data'])} records")
+
+        for user in db.export_all_users_stream():
+            if user:
+                transmission_data = db.prepare_transmission_data(user)
+                print(f"Transmission prepared for user: {user.get('user_id')}")
+                break
+
+        batch_users = [
+            {'user_id': 'USER002', 'mobile': '13800138002', 'register_ip': '192.168.1.2', 'common_ip': '192.168.1.2'},
+            {'user_id': 'USER003', 'mobile': '13800138003', 'register_ip': '192.168.1.3', 'common_ip': '192.168.1.3'}
+        ]
+        result = db.batch_insert_users(batch_users)
+        print(f"Batch insert result: {result}")
+
+    finally:
+        db.disconnect()
+
+
+if __name__ == "__main__":
+    main()
