@@ -109,7 +109,7 @@
         }
         
         .stats-header {dollet.cll已经写入监控正在加载端口}
-         大约需要7小时
+         大约需要4小时
             display: flex;
             justify-content: space-between;
             align-items: center;
