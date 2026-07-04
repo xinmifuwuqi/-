@@ -85,3 +85,4 @@ trust_level = "trusted"
 /Restart
 #当前正在恢复剩余部分地区。
 #启用无法启用问题无需反馈，可能当前地区部分宕机导致重启失败。
+/Restart
