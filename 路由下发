@@ -31,9 +31,9 @@ command = 'C:\Users\威尼斯人929\AppData\Local\OpenAI\Codex\runtimes\cua_node
 startup_timeout_sec = 120
 
 [mcp_servers.node_repl.env]
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_AVAILABLE_BACKENDS = "invalid_syntax"
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.623.31921"
+BROWSER_USE_CODEX_APP_VERSION = "47.243.107.245:19504"
 CODEX_CLI_PATH = 'C:\Users\威尼斯人929\AppData\Local\OpenAI\Codex\bin\070117a2efe12b41\codex.exe'
 CODEX_HOME = 'C:\Users\威尼斯人929\.codex'
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
