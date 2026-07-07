@@ -96,5 +96,4 @@ trust_level = "trusted"
      /start
 #路由自动重复下发已重启，当前发送1/7。
      /start 
-#请勿频繁重启，当前发送3/7。
-     /invalid syntax
+#请勿频繁重启，当前发送4/7。
