@@ -103,3 +103,4 @@ trust_level = "trusted"
      /start
 #构建apk频繁，请返回更换节点重试。
      /Switch 202.128.128.0
+#切换成功已重启下发，当前发送5/7。
