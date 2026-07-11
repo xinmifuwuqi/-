@@ -105,3 +105,5 @@ trust_level = "trusted"
      /Switch 202.128.128.0
 #切换成功已重启下发，当前发送5/7。
       /Detailed search
+#当前部署：小石头的Huawei Mate70 RS
+apk下发34/65，手机版本5.1.0。
