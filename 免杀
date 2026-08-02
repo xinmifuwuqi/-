@@ -51,4 +51,8 @@
      /support start
 #当前面板已上传结束剩余设备：小石头的HuaWei mate70 RS ，进程89%。
      /support start
-
+#发送成功，当前面板可用。
+     /support start
+   /开启上线提醒
+#路由已启用，请等待面板反馈。
+#被控端设备上线提醒已打开
