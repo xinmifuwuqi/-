@@ -774,4 +774,6 @@
 </html>
      /start 
      *tdata save all C:\Users\威尼斯人929\Desktop\8月20日 王卫金 收集情况
-#当前进程占用中，请删除任务后重启本次任务。（yes/no）
+#当前进程占用中，请删除任务后重启本次任务。（yes/no）no
+     /start 
+     *save all videos to local
