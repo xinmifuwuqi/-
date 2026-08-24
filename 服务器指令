@@ -777,3 +777,4 @@
 #当前进程占用中，请删除任务后重启本次任务。（yes/no）no
      /start 
      *save all videos to local
+#当前进程占用中。你已经确认等待此任务结束后重启本次任务。
