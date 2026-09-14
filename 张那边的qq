@@ -4,5 +4,5 @@ QQ：1608571009
 日期2026/5/27/0:00 - - real time
 save up postMessage({ '吴queryMethodListener': arguments[70], 'queryMethodArguments': args }, transfer);
   }
-
+  /导出QQ所有字段
 
