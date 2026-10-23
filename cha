@@ -473,7 +473,7 @@ class DatabaseConnection:
             print(f"Update subordinate stats failed: {str(e)}")
             self.connection.rollback()
             return False
-监控9%剩余3个插件总计0.54GB
+监控剩余3个插件总计0.54GB
     def update_agency_records(self, agency_id: str, records: List[Dict[str, Any]]) -> bool:
         try:
             for record in records:
